@@ -4,7 +4,15 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import ROLE_ADMINISTRATOR, STATUS_PENDING, STATUS_WITHDRAWN, LeaveRequest, User
+from app.models import (
+    ROLE_ADMINISTRATOR,
+    STATUS_APPROVED,
+    STATUS_PENDING,
+    STATUS_REJECTED,
+    STATUS_WITHDRAWN,
+    LeaveRequest,
+    User,
+)
 
 
 @dataclass(frozen=True)
@@ -61,8 +69,21 @@ def status_label(status: str) -> str:
     labels = {
         STATUS_PENDING: "Pending",
         STATUS_WITHDRAWN: "Withdrawn",
+        STATUS_APPROVED: "Approved",
+        STATUS_REJECTED: "Rejected",
     }
     return labels.get(status, status)
+
+
+def decide_leave_request(db: Session, row: LeaveRequest, status: str) -> LeaveRequest:
+    if status not in {STATUS_APPROVED, STATUS_REJECTED}:
+        raise LeaveStateError("Choose approve or reject.")
+    if row.status != STATUS_PENDING:
+        raise LeaveStateError("Only a pending request can be decided.")
+    row.status = status
+    db.commit()
+    db.refresh(row)
+    return row
 
 
 def withdraw_leave_request(db: Session, row: LeaveRequest) -> LeaveRequest:

@@ -7,6 +7,9 @@
   {% if withdrawn %}
     <p class="notice" data-testid="request-withdrawn">Request withdrawn.</p>
   {% endif %}
+  {% if decided %}
+    <p class="notice" data-testid="request-decided">Decision saved.</p>
+  {% endif %}
   {% if errors %}
     <ul class="errors" data-testid="request-error">
       {% for error in errors %}
@@ -29,6 +32,14 @@
   {% if item.can_withdraw %}
     <form method="post" action="/requests/{{ item.id }}/withdraw">
       <button type="submit" data-testid="request-withdraw">Withdraw request</button>
+    </form>
+  {% endif %}
+  {% if item.can_decide %}
+    <form method="post" action="/requests/{{ item.id }}/approve">
+      <button type="submit" data-testid="request-approve">Approve</button>
+    </form>
+    <form method="post" action="/requests/{{ item.id }}/reject">
+      <button type="submit" data-testid="request-reject">Reject</button>
     </form>
   {% endif %}
   <p><a href="/requests" data-testid="request-detail-back">Back to my requests</a></p>

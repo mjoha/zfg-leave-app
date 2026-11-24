@@ -16,6 +16,7 @@ from app.leave import (
     LeaveStateError,
     can_view_leave_request,
     create_leave_request,
+    decide_leave_request,
     get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
@@ -24,7 +25,7 @@ from app.leave import (
     validate_leave_request,
     withdraw_leave_request,
 )
-from app.models import ROLE_ADMINISTRATOR, STATUS_PENDING, User
+from app.models import ROLE_ADMINISTRATOR, STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, User
 from app.users import (
     DuplicateEmailError,
     authenticate,
@@ -289,7 +290,14 @@ def _request_rows(rows: list) -> list[dict[str, object]]:
     ]
 
 
-def _detail_context(row, user: User, errors: list[str], *, withdrawn: bool) -> dict[str, object]:
+def _detail_context(
+    row,
+    user: User,
+    errors: list[str],
+    *,
+    withdrawn: bool,
+    decided: bool = False,
+) -> dict[str, object]:
     return {
         "item": {
             "id": row.id,
@@ -300,9 +308,11 @@ def _detail_context(row, user: User, errors: list[str], *, withdrawn: bool) -> d
             "status_label": status_label(row.status),
             "created": _format_timestamp(row.created_at),
             "can_withdraw": row.status == STATUS_PENDING and row.user_id == user.id,
+            "can_decide": row.status == STATUS_PENDING and user.role == ROLE_ADMINISTRATOR,
         },
         "errors": errors,
         "withdrawn": withdrawn,
+        "decided": decided,
     }
 
 
@@ -321,8 +331,52 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
     return templates.TemplateResponse(
         request,
         "request_detail.html",
-        _detail_context(row, user, [], withdrawn=request.query_params.get("withdrawn") == "1"),
+        _detail_context(
+            row,
+            user,
+            [],
+            withdrawn=request.query_params.get("withdrawn") == "1",
+            decided=request.query_params.get("decided") in {STATUS_APPROVED, STATUS_REJECTED},
+        ),
     )
+
+
+def _decide(request: Request, request_id: int, db: Session, status: str) -> Response:
+    try:
+        user = load_session_user(request, db)
+        row = get_leave_request(db, request_id) if user is not None else None
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    if row is None or not can_view_leave_request(user, row):
+        return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    if user.role != ROLE_ADMINISTRATOR:
+        return templates.TemplateResponse(request, "forbidden.html", {}, status_code=403)
+    try:
+        decide_leave_request(db, row, status)
+    except LeaveStateError as exc:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, [exc.message], withdrawn=False),
+            status_code=400,
+        )
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    return RedirectResponse(url=f"/requests/{row.id}?decided={status}", status_code=303)
+
+
+@app.post("/requests/{request_id}/approve")
+def approve_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
+    return _decide(request, request_id, db, STATUS_APPROVED)
+
+
+@app.post("/requests/{request_id}/reject")
+def reject_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
+    return _decide(request, request_id, db, STATUS_REJECTED)
 
 
 def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:

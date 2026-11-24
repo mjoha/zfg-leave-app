@@ -9,6 +9,8 @@ ROLE_EMPLOYEE = "employee"
 ROLE_ADMINISTRATOR = "administrator"
 STATUS_PENDING = "pending"
 STATUS_WITHDRAWN = "withdrawn"
+STATUS_APPROVED = "approved"
+STATUS_REJECTED = "rejected"
 
 
 def utcnow() -> datetime:

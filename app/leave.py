@@ -111,6 +111,19 @@ def decide_leave_request(
     return row
 
 
+def update_pending_leave_request(db: Session, row: LeaveRequest, data: LeaveRequestInput) -> LeaveRequest:
+    if row.status != STATUS_PENDING:
+        raise LeaveStateError("Only a pending request can be edited.")
+    if data.end_date < data.start_date:
+        raise LeaveStateError("End date must be on or after the start date.")
+    row.start_date = data.start_date
+    row.end_date = data.end_date
+    row.reason = data.reason
+    db.commit()
+    db.refresh(row)
+    return row
+
+
 def withdraw_leave_request(db: Session, row: LeaveRequest) -> LeaveRequest:
     if row.status != STATUS_PENDING:
         raise LeaveStateError("Only a pending request can be withdrawn.")

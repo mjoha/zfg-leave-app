@@ -25,10 +25,11 @@ from app.leave import (
     status_label,
     submission_token_used,
     validate_decision_comment,
+    update_pending_leave_request,
     validate_leave_request,
     withdraw_leave_request,
 )
-from app.models import ROLE_ADMINISTRATOR, STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, User
+from app.models import ROLE_ADMINISTRATOR, STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, LeaveRequest, User
 from app.users import (
     DuplicateEmailError,
     authenticate,
@@ -342,6 +343,7 @@ def _detail_context(
     *,
     withdrawn: bool,
     decided: bool = False,
+    edited: bool = False,
     comment: str = "",
 ) -> dict[str, object]:
     return {
@@ -355,10 +357,12 @@ def _detail_context(
             "created": _format_timestamp(row.created_at),
             "decision_comment": row.decision_comment,
             "can_withdraw": row.status == STATUS_PENDING and row.user_id == user.id,
+            "can_edit": row.status == STATUS_PENDING and row.user_id == user.id,
             "can_decide": row.status == STATUS_PENDING and user.role == ROLE_ADMINISTRATOR,
         },
         "errors": errors,
         "withdrawn": withdrawn,
+        "edited": edited,
         "decided": decided,
         "comment": comment,
         "timeline": _timeline(row),
@@ -399,8 +403,83 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
             [],
             withdrawn=request.query_params.get("withdrawn") == "1",
             decided=request.query_params.get("decided") in {STATUS_APPROVED, STATUS_REJECTED},
+            edited=request.query_params.get("edited") == "1",
         ),
     )
+
+
+def _owner_request(
+    request: Request,
+    db: Session,
+    request_id: int,
+) -> tuple[User | None, LeaveRequest | None, Response | None]:
+    try:
+        user = load_session_user(request, db)
+        row = get_leave_request(db, request_id) if user is not None else None
+    except OperationalError:
+        db.rollback()
+        return None, None, templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return None, None, RedirectResponse(url="/login", status_code=303)
+    if row is None or row.user_id != user.id:
+        return None, None, templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    return user, row, None
+
+
+@app.get("/requests/{request_id}/edit", response_class=HTMLResponse)
+def edit_leave_request_form(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
+    user, row, failure = _owner_request(request, db, request_id)
+    if failure is not None or user is None or row is None:
+        return failure if failure is not None else templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    if row.status != STATUS_PENDING:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, ["Only a pending request can be edited."], withdrawn=False),
+            status_code=400,
+        )
+    context = _request_form_context([], row.start_date.isoformat(), row.end_date.isoformat(), row.reason, "")
+    context["request_id"] = row.id
+    return templates.TemplateResponse(request, "request_edit.html", context)
+
+
+@app.post("/requests/{request_id}/edit")
+def edit_leave_request(
+    request: Request,
+    request_id: int,
+    start_date: str = Form(""),
+    end_date: str = Form(""),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+) -> Response:
+    user, row, failure = _owner_request(request, db, request_id)
+    if failure is not None or user is None or row is None:
+        return failure if failure is not None else templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    if row.status != STATUS_PENDING:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, ["Only a pending request can be edited."], withdrawn=False),
+            status_code=400,
+        )
+    data, errors = validate_leave_request(start_date, end_date, reason)
+    if data is None:
+        context = _request_form_context(errors, start_date, end_date, reason, "")
+        context["request_id"] = row.id
+        return templates.TemplateResponse(request, "request_edit.html", context, status_code=400)
+    try:
+        update_pending_leave_request(db, row, data)
+    except LeaveStateError as exc:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, [exc.message], withdrawn=False),
+            status_code=400,
+        )
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    return RedirectResponse(url=f"/requests/{row.id}?edited=1", status_code=303)
 
 
 def _decide(request: Request, request_id: int, db: Session, status: str, comment_raw: str) -> Response:

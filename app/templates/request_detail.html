@@ -7,6 +7,9 @@
   {% if withdrawn %}
     <p class="notice" data-testid="request-withdrawn">Request withdrawn.</p>
   {% endif %}
+  {% if edited %}
+    <p class="notice" data-testid="request-edited">Request updated.</p>
+  {% endif %}
   {% if decided %}
     <p class="notice" data-testid="request-decided">Decision saved.</p>
   {% endif %}
@@ -47,6 +50,9 @@
     <dt>Submitted</dt>
     <dd data-testid="request-detail-submitted">{{ item.created }}</dd>
   </dl>
+  {% if item.can_edit %}
+    <p><a href="/requests/{{ item.id }}/edit" data-testid="request-edit">Edit request</a></p>
+  {% endif %}
   {% if item.can_withdraw %}
     <form method="post" action="/requests/{{ item.id }}/withdraw">
       <button type="submit" data-testid="request-withdraw">Withdraw request</button>

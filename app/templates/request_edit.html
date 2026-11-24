@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Edit leave request{% endblock %}
+
+{% block content %}
+  <h1>Edit leave request</h1>
+  <p>Update the dates or the reason. Only a pending request can be edited.</p>
+  {% if errors %}
+    <ul class="errors" data-testid="request-error">
+      {% for error in errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post" action="/requests/{{ request_id }}/edit" data-testid="request-edit-form">
+    <label for="start_date">Start date</label>
+    <input id="start_date" name="start_date" type="date" value="{{ start_date }}" data-testid="request-start" required>
+
+    <label for="end_date">End date</label>
+    <input id="end_date" name="end_date" type="date" value="{{ end_date }}" data-testid="request-end" required>
+
+    <label for="reason">Reason</label>
+    <textarea id="reason" name="reason" rows="4" maxlength="500" data-testid="request-reason" required>{{ reason }}</textarea>
+
+    <button type="submit" data-testid="request-edit-submit">Save changes</button>
+  </form>
+  <p><a href="/requests/{{ request_id }}" data-testid="request-edit-cancel">Cancel</a></p>
+{% endblock %}

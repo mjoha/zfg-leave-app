@@ -57,7 +57,7 @@ There is no seeded demo account yet.
 2. Sign in at `http://127.0.0.1:8000/login`. The session cookie is named `leave_session`. It is HttpOnly, SameSite=Lax, and expires after 8 hours. Sign-in then opens your profile.
 3. On the profile page, change the display name. Email and role stay as stored.
 4. Use Sign out in the header to clear the session.
-5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. The request is stored as pending.
+5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. My requests then lists only that account's pending requests.
 
 ### Configuration
 
@@ -105,7 +105,7 @@ Interactive controls and important page states use stable `data-testid` attribut
 | Sign in | `login-form`, `login-email`, `login-password`, `login-submit`, `login-error` |
 | Signed-in home | `nav-new-request`, `nav-profile`, `nav-user`, `logout-form`, `logout-submit`, `signed-in-name` |
 | New leave request | `request-form`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error` |
-| Request saved | `request-saved`, `request-saved-summary`, `request-saved-another` |
+| My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-empty`, `request-saved`, `request-list-new` |
 | Profile | `profile-display-name`, `profile-email`, `profile-role`, `profile-created`, `profile-form`, `profile-display-name-input`, `profile-submit`, `profile-saved`, `profile-error` |
 | Missing page | `not-found`, `not-found-home` |
 | Database not ready | `database-unavailable`, `database-unavailable-register` |

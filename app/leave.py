@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import STATUS_PENDING, LeaveRequest
@@ -48,6 +49,15 @@ def validate_leave_request(
     if errors or start_date is None or end_date is None:
         return None, errors
     return LeaveRequestInput(start_date, end_date, reason), []
+
+
+def list_leave_requests_for_user(db: Session, user_id: int) -> list[LeaveRequest]:
+    statement = (
+        select(LeaveRequest)
+        .where(LeaveRequest.user_id == user_id)
+        .order_by(LeaveRequest.created_at.desc(), LeaveRequest.id.desc())
+    )
+    return list(db.scalars(statement))
 
 
 def create_leave_request(db: Session, user_id: int, data: LeaveRequestInput) -> LeaveRequest:

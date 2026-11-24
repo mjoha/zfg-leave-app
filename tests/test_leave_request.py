@@ -64,13 +64,14 @@ def test_signed_in_user_can_create_a_pending_request(client):
 
     response = _submit(client)
     assert response.status_code == 303
-    assert response.headers["location"] == "/requests/created?start=2001-06-12&end=2001-06-14"
+    assert response.headers["location"] == "/requests?saved=1"
 
     created = client.get(response.headers["location"])
     assert created.status_code == 200
     assert 'data-testid="request-saved"' in created.text
-    assert 'data-testid="request-saved-summary"' in created.text
-    assert "3 days" in created.text
+    assert 'data-testid="request-list"' in created.text
+    assert "2001-06-12 to 2001-06-14" in created.text
+    assert "3" in created.text
 
     rows = _rows()
     assert len(rows) == 1
@@ -105,6 +106,40 @@ def test_invalid_reason_and_dates_are_rejected(client):
     assert "end date" in body
     assert "Reason" in body
     assert _rows() == []
+
+
+def test_list_shows_only_the_signed_in_users_requests(client):
+    assert _register(client).status_code == 303
+    assert _login(client).status_code == 303
+    assert _submit(client, reason="Ada trip").status_code == 303
+    client.post("/logout", follow_redirects=False)
+
+    assert _register(client, email="grace@example.com", display_name="Grace Hopper").status_code == 303
+    assert _login(client, email="grace@example.com").status_code == 303
+    empty = client.get("/requests")
+    assert empty.status_code == 200
+    assert 'data-testid="request-empty"' in empty.text
+    assert "Ada trip" not in empty.text
+    assert 'data-testid="nav-requests"' in empty.text
+
+    assert _submit(client, start_date="2001-07-02", end_date="2001-07-02", reason="Grace day").status_code == 303
+    grace_list = client.get("/requests")
+    assert grace_list.text.count('data-testid="request-row"') == 1
+    assert "Grace day" in grace_list.text
+    assert "Ada trip" not in grace_list.text
+    assert "Pending" in grace_list.text
+
+    client.post("/logout", follow_redirects=False)
+    assert _login(client, email="ada@example.com").status_code == 303
+    ada_list = client.get("/requests")
+    assert "Ada trip" in ada_list.text
+    assert "Grace day" not in ada_list.text
+
+
+def test_requests_page_requires_sign_in(client):
+    response = client.get("/requests", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
 
 
 def test_submit_reports_missing_database(client, tmp_path, monkeypatch):

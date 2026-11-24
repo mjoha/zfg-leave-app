@@ -1,4 +1,4 @@
-from datetime import date, timezone
+from datetime import timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -11,7 +11,12 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.database import get_db, get_engine
-from app.leave import create_leave_request, inclusive_days, validate_leave_request
+from app.leave import (
+    create_leave_request,
+    inclusive_days,
+    list_leave_requests_for_user,
+    validate_leave_request,
+)
 from app.models import User
 from app.users import (
     DuplicateEmailError,
@@ -283,34 +288,39 @@ def submit_leave_request(
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
-    return RedirectResponse(
-        url=f"/requests/created?start={data.start_date.isoformat()}&end={data.end_date.isoformat()}",
-        status_code=303,
-    )
+    return RedirectResponse(url="/requests?saved=1", status_code=303)
 
 
-@app.get("/requests/created", response_class=HTMLResponse)
-def leave_request_created(request: Request, db: Session = Depends(get_db)) -> Response:
+def _request_rows(rows: list) -> list[dict[str, object]]:
+    return [
+        {
+            "start_date": row.start_date.isoformat(),
+            "end_date": row.end_date.isoformat(),
+            "day_count": inclusive_days(row.start_date, row.end_date),
+            "reason": row.reason,
+            "status_label": "Pending" if row.status == "pending" else row.status,
+        }
+        for row in rows
+    ]
+
+
+@app.get("/requests", response_class=HTMLResponse)
+def my_leave_requests(request: Request, db: Session = Depends(get_db)) -> Response:
     try:
         user = _profile_user(request, db)
+        rows = list_leave_requests_for_user(db, user.id) if user is not None else []
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
-    start_raw = request.query_params.get("start", "")
-    end_raw = request.query_params.get("end", "")
-    try:
-        start_date = date.fromisoformat(start_raw)
-        end_date = date.fromisoformat(end_raw)
-    except ValueError:
-        start_date = None
-        end_date = None
-    day_count = inclusive_days(start_date, end_date) if start_date and end_date and end_date >= start_date else None
     return templates.TemplateResponse(
         request,
-        "request_created.html",
-        {"start_date": start_raw, "end_date": end_raw, "day_count": day_count},
+        "request_list.html",
+        {
+            "requests": _request_rows(rows),
+            "saved": request.query_params.get("saved") == "1",
+        },
     )
 
 

@@ -51,9 +51,20 @@ curl http://127.0.0.1:8000/health
 
 ### Use the app
 
-There is no seeded demo account yet.
+Load fictional demo accounts after the tables exist:
 
-1. Create an employee at `http://127.0.0.1:8000/register`. Registration stores the account and does not sign you in.
+```text
+.venv\Scripts\python -m app.seed
+```
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `employee@example.com` | `employee-demo-pass` | Employee, with one pending request for 2001-06-12 through 2001-06-14 |
+| `admin@example.com` | `admin-demo-pass` | Administrator |
+
+Running the seed again does not duplicate those rows or reset a display name you already changed. The container runs this seed on startup. These passwords are fake local demo values.
+
+1. Or create another employee at `http://127.0.0.1:8000/register`. Registration stores the account and does not sign you in.
 2. Sign in at `http://127.0.0.1:8000/login`. The session cookie is named `leave_session`. It is HttpOnly, SameSite=Lax, and expires after 8 hours. Sign-in then opens your profile.
 3. On the profile page, change the display name. Email and role stay as stored.
 4. Use Sign out in the header to clear the session.
@@ -73,7 +84,7 @@ Restart the process after changing session settings. The value used at startup i
 
 ### Reset local data
 
-Stop the app, delete `data/leave.db` and `data/session_secret`, then run `python -m app.db_init` again. That removes local accounts and invalidates old session cookies. Nothing in the database is a real credential.
+Stop the app, delete `data/leave.db` and `data/session_secret`, then run `python -m app.db_init` and `python -m app.seed` again. That removes local accounts, restores the demo rows, and invalidates old session cookies. Nothing in the database is a real credential.
 
 ### Tests
 
@@ -85,7 +96,7 @@ The local CI-equivalent command does not use a network or an external service. I
 
 ### Container
 
-Port 8000. The image initializes the database, then serves the app. The SQLite file and session secret persist in `./data` on the host.
+Port 8000. The image initializes the database, loads the demo seed, then serves the app. The SQLite file and session secret persist in `./data` on the host.
 
 ```text
 docker compose up --build

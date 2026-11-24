@@ -3,12 +3,12 @@ import sys
 
 import uvicorn
 
-from app.db_init import main as initialize_database
+from app.seed import seed_database
 
 
 def main() -> None:
-    """Initialize the local database, then replace this process with uvicorn."""
-    initialize_database()
+    """Initialize the local database, load demo data, then serve HTTP."""
+    seed_database()
     os.execv(
         sys.executable,
         [

@@ -1,9 +1,14 @@
+from datetime import date
+
+import pytest
+from alembic.runtime.migration import MigrationContext
 from sqlalchemy import inspect, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_engine, init_database, reset_database_state
 from app.db_init import main
-from app.models import User
+from app.models import LeaveRequest, User
 from app.security import hash_password
 
 
@@ -15,6 +20,9 @@ def test_db_init_creates_schema_and_can_run_again(tmp_path, monkeypatch):
         main()
         assert database_file.exists()
         assert "users" in inspect(get_engine()).get_table_names()
+        assert "leave_requests" in inspect(get_engine()).get_table_names()
+        with get_engine().connect() as connection:
+            assert MigrationContext.configure(connection).get_current_revision() == "0001_initial"
 
         with Session(get_engine()) as session:
             session.add(
@@ -31,5 +39,18 @@ def test_db_init_creates_schema_and_can_run_again(tmp_path, monkeypatch):
             saved = session.scalars(select(User)).one()
         assert saved.email == "kept@example.com"
         assert saved.role == "employee"
+
+        with pytest.raises(IntegrityError):
+            with Session(get_engine()) as session:
+                session.add(
+                    LeaveRequest(
+                        user_id=999999,
+                        start_date=date(2001, 6, 12),
+                        end_date=date(2001, 6, 12),
+                        reason="Missing employee",
+                        status="pending",
+                    )
+                )
+                session.commit()
     finally:
         reset_database_state()

@@ -33,7 +33,7 @@ py -3.12 -m venv .venv
 
 On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
-`db_init` creates any missing tables in the local SQLite file. It does not delete existing accounts. Starting `uvicorn` does not create the database; run `db_init` first. The container command does both.
+`db_init` applies the Alembic migrations in `alembic/versions` and does not delete existing accounts. The current head revision is `0001_initial`. Starting `uvicorn` does not migrate the database; run `db_init` first. The container migrates, seeds demo data, and then serves.
 
 Open `http://127.0.0.1:8000/`.
 

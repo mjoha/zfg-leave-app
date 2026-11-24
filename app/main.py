@@ -21,7 +21,6 @@ from app.leave import (
     get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
-    list_pending_reviews,
     status_label,
     submission_token_used,
     validate_decision_comment,
@@ -30,6 +29,7 @@ from app.leave import (
     withdraw_leave_request,
 )
 from app.models import ROLE_ADMINISTRATOR, STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED, LeaveRequest, User
+from app.reviews import list_pending_reviews
 from app.users import (
     DuplicateEmailError,
     authenticate,

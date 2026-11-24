@@ -142,16 +142,6 @@ def can_view_leave_request(user: User, row: LeaveRequest) -> bool:
     return row.user_id == user.id or user.role == ROLE_ADMINISTRATOR
 
 
-def list_pending_reviews(db: Session) -> list[tuple[LeaveRequest, str]]:
-    statement = (
-        select(LeaveRequest, User.display_name)
-        .join(User, User.id == LeaveRequest.user_id)
-        .where(LeaveRequest.status == STATUS_PENDING)
-        .order_by(LeaveRequest.created_at.asc(), LeaveRequest.id.asc())
-    )
-    return [(row, name) for row, name in db.execute(statement).all()]
-
-
 def list_leave_requests_for_user(db: Session, user_id: int) -> list[LeaveRequest]:
     statement = (
         select(LeaveRequest)

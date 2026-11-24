@@ -92,3 +92,20 @@ docker compose up --build
 ```
 
 Health: `http://127.0.0.1:8000/health`.
+
+## Browser selectors
+
+Interactive controls and important page states use stable `data-testid` attributes. `tests/test_selectors.py` checks that these values are still present:
+
+| Page | Selectors |
+| --- | --- |
+| Signed-out home | `brand-link`, `nav-home`, `nav-register`, `nav-login`, `landing-title`, `landing-summary`, `landing-register`, `landing-login` |
+| Register | `register-form`, `register-email`, `register-display-name`, `register-password`, `register-password-confirm`, `register-submit`, `register-error` |
+| Account created | `registration-success`, `registration-success-login`, `registration-success-home` |
+| Sign in | `login-form`, `login-email`, `login-password`, `login-submit`, `login-error` |
+| Signed-in home | `nav-profile`, `nav-user`, `logout-form`, `logout-submit`, `signed-in-name` |
+| Profile | `profile-display-name`, `profile-email`, `profile-role`, `profile-created`, `profile-form`, `profile-display-name-input`, `profile-submit`, `profile-saved`, `profile-error` |
+| Missing page | `not-found`, `not-found-home` |
+| Database not ready | `database-unavailable`, `database-unavailable-register` |
+
+`register-error`, `login-error`, `profile-error`, `profile-saved`, and the database page appear only in those states.

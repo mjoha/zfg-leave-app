@@ -9,19 +9,8 @@ The goal is an *authentic authored code progression* suitable for later replay, 
 - Never overwrite/rebase previously approved days or release tags without explicit consent.
 - Tickets must be tied to existing committed code, not just descriptions.
 
-## Journal
-Under `history/days/day-XX.json`, write a factual record including:
-```
-{
-  "day": 3,
-  "tickets": ["F-005", "F-006", "C-002", "C-004"],
-  "commits": [{"sha":"ACTUAL_SHA", "ticket":"F-005", "message":"..."}],
-  "tests": [{"command":"pytest -q", "exit_code":0, "summary":"..."}],
-  "release": null,
-  "notes": []
-}
-```
-Resolve real commit IDs after commit creation; if metadata requires a commit of its own, don't create a circular self-reference. Record the implementation SHA, not the metadata commit itself.
+## No replay journal
+Do not add `history/` files, day journals, release manifests, simulated meetings, prompt transcripts, or other replay events. Those belong in a separate project. Commit messages with ticket IDs, and annotated release tags, are the record that stays in this repository.
 
 ## Defect narrative
 - `04_BUG_ARCS.json` contains optional candidates. Some are expressly ineligible due to scheduling conflicts. Validate *actual* feature/fix chronology before using any arc.
@@ -31,9 +20,9 @@ Resolve real commit IDs after commit creation; if metadata requires a commit of 
 
 ## Releases
 - Release tag format: `replay/day-03`, `replay/day-06`, etc.
-- `history/releases/day-XX.json` must contain actual SHA, Python/dependency lock reference, database schema revision, seed version, build/run commands, smoke outcome, and optionally screenshot locations.
-- Release snapshots must be independently reproducible with fresh DB/seed. A running release isn't allowed to migrate the user’s main DB backward.
-- For future browser playback, record stable selectors and documented routes at checkpoints. `06_REPLAY_CONTRACT_EXAMPLE.json` is only an example for a later separate game.
+- Put the schema revision, seed command, and build/run commands in the annotated tag message after the checklist passes. Do not add a separate manifest file.
+- Release snapshots must be independently reproducible with a fresh database and the seed command at that tag. A running release must not migrate a newer database backward.
+- Keep stable `data-testid` selectors on the controls that browser checks need. Document them in the README when they change.
 
 ## No fictional activity yet
 Do not generate Teams conversations, fake AI prompt transcripts, pretend meeting recordings or simulated mouse movement as part of target-app development. Those will be created later from actual Git code changes and product state.

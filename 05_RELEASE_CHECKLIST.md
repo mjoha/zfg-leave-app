@@ -9,7 +9,7 @@
 - [ ] Automated suite actually executed; exit status and output captured
 - [ ] At least one relevant smoke scenario run and verified
 - [ ] No external network needed at runtime; no third-party embedded assets
-- [ ] Release manifest includes SHA, schema revision, seed version, image build command
-- [ ] Release tag created only **after** verification
+- [ ] Annotated release tag records the schema revision, seed command, and image build command
+- [ ] Release tag created only **after** verification. Do not add a `history/` manifest.
 
 **Remember:** An old release is reproduced with a **fresh matching database**, not with the newest persisted SQLite DB.

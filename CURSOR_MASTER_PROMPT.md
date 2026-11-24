@@ -2,7 +2,7 @@
 
 You are developing a real, local-first leave-request web application that will later serve as the target of a separate satirical zero-player game's *pre-recorded* development history. Your deliverable NOW is the functioning application and its authentic Git evolution, NOT any game engine or animated interface.
 
-Read, in order: `README.md`, `01_PRODUCT_AND_TECH.md`, `02_HISTORY_RULES.md`, `03_30_DAY_BACKLOG.csv`, `04_BUG_ARCS.json`, `05_RELEASE_CHECKLIST.md`. `06_REPLAY_CONTRACT_EXAMPLE.json` is illustrative only.
+Read, in order: `README.md`, `01_PRODUCT_AND_TECH.md`, `02_HISTORY_RULES.md`, `03_30_DAY_BACKLOG.csv`, `04_BUG_ARCS.json`, `05_RELEASE_CHECKLIST.md`.
 
 ## Mission
 - Implement the 120 backlog tickets in their scheduled order across 30 *fictional development days*, four tickets/day. The fictional days are story labels, not a request to spend 30 actual days.
@@ -15,7 +15,7 @@ Read, in order: `README.md`, `01_PRODUCT_AND_TECH.md`, `02_HISTORY_RULES.md`, `0
 ## Git and narrative constraints
 - Initialize Git if needed; use genuine small commits that reflect actual implementation, tests, and fixes. Include ticket IDs in subjects and meaningful body messages when useful.
 - Avoid generating empty commits or rewriting history to make it appear more complex.
-- For each completed ticket write machine-readable metadata linking fictional day, ticket, real commit SHAs, test outcomes, and any honest limitations. Keep metadata in `history/` and commit it; don't depend on ZPG code.
+- Do not write replay journals, `history/` metadata, simulated meetings, or prompt transcripts. Ticket IDs in commit messages are the link between backlog and code.
 - At the end of days 03,06,...,30 follow `05_RELEASE_CHECKLIST.md`. Tag a checkpoint only if clean-checkout rebuild + smoke tests pass.
 - Any *intentional* defect must be a safe, local, testable business-logic regression, not an auth/privacy/security vulnerability. It must be introduced only after the affected feature exists, and it must be fixed later. Optional arcs in the supplied JSON are suggestions, not orders. Don't introduce a defect merely because a future bug ticket is scheduled.
 
@@ -29,6 +29,6 @@ Read, in order: `README.md`, `01_PRODUCT_AND_TECH.md`, `02_HISTORY_RULES.md`, `0
 1. Inspect backlog for target day; check dependencies, resolve obviously invalid ordering conservatively, and document deviations.
 2. Implement one ticket at a time with tests. Commit genuinely after each coherent set of changes.
 3. Run tests and basic HTTP smoke tests. Fix blocking issues and commit fixes honestly.
-4. Record factual metadata and stop after the assigned day.
+4. On a release day, run the checklist and tag only after it passes. Stop after the assigned day. Do not add a history journal commit.
 
 Start Day 01 now. Do not build subsequent days or any ZPG components.

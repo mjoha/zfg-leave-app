@@ -11,3 +11,4 @@ htmlcov/
 data/*.db
 data/*.db-*
 data/session_secret
+history/

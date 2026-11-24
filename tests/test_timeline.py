@@ -1,7 +1,7 @@
 from app.models import STATUS_WITHDRAWN
 from app.seed import DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, seed_database
 from tests.test_leave_request import _login, _register, _rows, _submit
-from tests.test_review_queue import _login_as
+from tests.test_review_queue import _login_as, decision_payload
 
 
 def _labels(body: str) -> list[str]:
@@ -34,7 +34,7 @@ def test_decision_appends_a_timeline_event_with_the_comment(client):
     assert _login_as(client, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD).status_code == 303
     assert client.post(
         f"/requests/{request_id}/approve",
-        data={"comment": "See you then"},
+        data=decision_payload(client, request_id, comment="See you then"),
         follow_redirects=False,
     ).status_code == 303
     detail = client.get(f"/requests/{request_id}")

@@ -13,6 +13,9 @@
   {% if decided %}
     <p class="notice" data-testid="request-decided">Decision saved.</p>
   {% endif %}
+  {% if csrf_error is defined and csrf_error %}
+    <p class="errors" data-testid="csrf-error">The form is missing a valid security token.</p>
+  {% endif %}
   {% if errors %}
     <ul class="errors" data-testid="request-error">
       {% for error in errors %}
@@ -61,6 +64,7 @@
   {% if item.can_decide %}
     <form method="post" data-testid="request-decision-form">
       <input type="hidden" name="expected_status" value="{{ item.status }}" data-testid="request-expected-status">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" data-testid="csrf-token">
       <label for="decision_comment">Comment</label>
       <textarea id="decision_comment" name="comment" rows="3" maxlength="500" data-testid="request-decision-comment-input">{{ comment }}</textarea>
       <button type="submit" formaction="/requests/{{ item.id }}/approve" data-testid="request-approve">Approve</button>

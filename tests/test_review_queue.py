@@ -1,3 +1,5 @@
+import re
+
 from app.models import STATUS_PENDING
 from app.seed import (
     DEMO_ADMIN_EMAIL,
@@ -7,6 +9,15 @@ from app.seed import (
     seed_database,
 )
 from tests.test_leave_request import _login, _register, _rows, _submit
+
+
+def decision_payload(client, request_id: int, **extra: str) -> dict[str, str]:
+    page = client.get(f"/requests/{request_id}")
+    match = re.search(r'name="csrf-token" content="([^"]+)"', page.text)
+    assert match is not None
+    payload = {"csrf_token": match.group(1)}
+    payload.update(extra)
+    return payload
 
 
 def _login_as(client, email: str, password: str):

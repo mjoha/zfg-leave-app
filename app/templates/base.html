@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Home{% endblock %} · {{ app_name }}</title>
+  {% if csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+  {% endif %}
   <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 </head>

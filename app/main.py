@@ -11,7 +11,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.auth import clear_session, establish_session, load_session_user, signed_in_user
+from app.auth import clear_session, csrf_matches, establish_session, issue_csrf, load_session_user, signed_in_user
 from app.calendar_view import adjacent_weeks, month_weeks, shift_month, week_row
 from app.config import get_settings
 from app.database import get_db
@@ -46,7 +46,14 @@ BASE_DIR = Path(__file__).resolve().parent
 
 
 def _template_defaults(request: Request) -> dict[str, object]:
-    return {"app_name": get_settings().app_name, "current_user": signed_in_user(request)}
+    token = ""
+    if isinstance(request.session.get("user_id"), int):
+        token = issue_csrf(request)
+    return {
+        "app_name": get_settings().app_name,
+        "current_user": signed_in_user(request),
+        "csrf_token": token,
+    }
 
 
 app = FastAPI(title=get_settings().app_name, telemetry={"auto_configure": False})
@@ -550,6 +557,7 @@ def _decide(
     status: str,
     comment_raw: str,
     expected_status: str,
+    csrf_token_raw: str,
 ) -> Response:
     try:
         user = load_session_user(request, db)
@@ -563,6 +571,10 @@ def _decide(
         return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
     if user.role != ROLE_ADMINISTRATOR:
         return templates.TemplateResponse(request, "forbidden.html", {}, status_code=403)
+    if not csrf_matches(request, csrf_token_raw):
+        context = _detail_context(row, user, [], withdrawn=False, comment=comment_raw)
+        context["csrf_error"] = True
+        return templates.TemplateResponse(request, "request_detail.html", context, status_code=403)
     if expected_status and expected_status != row.status:
         return templates.TemplateResponse(
             request,
@@ -605,9 +617,10 @@ def approve_request(
     request_id: int,
     comment: str = Form(""),
     expected_status: str = Form(""),
+    csrf_token: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
-    return _decide(request, request_id, db, STATUS_APPROVED, comment, expected_status)
+    return _decide(request, request_id, db, STATUS_APPROVED, comment, expected_status, csrf_token)
 
 
 @app.post("/requests/{request_id}/reject")
@@ -616,9 +629,10 @@ def reject_request(
     request_id: int,
     comment: str = Form(""),
     expected_status: str = Form(""),
+    csrf_token: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
-    return _decide(request, request_id, db, STATUS_REJECTED, comment, expected_status)
+    return _decide(request, request_id, db, STATUS_REJECTED, comment, expected_status, csrf_token)
 
 
 def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:

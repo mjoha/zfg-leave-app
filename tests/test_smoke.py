@@ -9,7 +9,7 @@ from app.seed import (
     seed_database,
 )
 from tests.test_leave_request import _rows
-from tests.test_review_queue import _login_as
+from tests.test_review_queue import _login_as, decision_payload
 
 
 def test_demo_request_can_be_reviewed_and_approved(client):
@@ -35,7 +35,7 @@ def test_demo_request_can_be_reviewed_and_approved(client):
     assert "Demo Employee" in queue.text
     decision = client.post(
         f"/requests/{request_id}/approve",
-        data={"comment": "Approved for the demo"},
+        data=decision_payload(client, request_id, comment="Approved for the demo"),
         follow_redirects=True,
     )
     assert decision.status_code == 200

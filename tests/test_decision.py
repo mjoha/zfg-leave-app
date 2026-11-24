@@ -1,7 +1,7 @@
 from app.models import STATUS_APPROVED, STATUS_PENDING, STATUS_REJECTED
 from app.seed import DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, DEMO_EMPLOYEE_EMAIL, DEMO_EMPLOYEE_PASSWORD, seed_database
 from tests.test_leave_request import _login, _register, _rows, _submit
-from tests.test_review_queue import _login_as
+from tests.test_review_queue import _login_as, decision_payload
 
 
 def test_administrator_can_approve_a_pending_request(client):
@@ -12,7 +12,11 @@ def test_administrator_can_approve_a_pending_request(client):
     assert 'data-testid="request-approve"' in detail.text
     assert 'data-testid="request-reject"' in detail.text
 
-    response = client.post(f"/requests/{request_id}/approve", follow_redirects=False)
+    response = client.post(
+        f"/requests/{request_id}/approve",
+        data=decision_payload(client, request_id),
+        follow_redirects=False,
+    )
     assert response.status_code == 303
     assert response.headers["location"] == f"/requests/{request_id}?decided=approved"
     saved = client.get(response.headers["location"])
@@ -39,7 +43,11 @@ def test_administrator_can_reject_a_pending_request(client):
     seed_database()
     assert _login_as(client, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD).status_code == 303
 
-    response = client.post(f"/requests/{request_id}/reject", follow_redirects=False)
+    response = client.post(
+        f"/requests/{request_id}/reject",
+        data=decision_payload(client, request_id),
+        follow_redirects=False,
+    )
     assert response.status_code == 303
     assert _rows()[0].status == STATUS_REJECTED
     detail = client.get(f"/requests/{request_id}")
@@ -64,8 +72,15 @@ def test_a_request_can_be_decided_only_once(client):
     seed_database()
     request_id = _rows()[0].id
     assert _login_as(client, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD).status_code == 303
-    assert client.post(f"/requests/{request_id}/approve", follow_redirects=False).status_code == 303
-    again = client.post(f"/requests/{request_id}/reject")
+    assert client.post(
+        f"/requests/{request_id}/approve",
+        data=decision_payload(client, request_id),
+        follow_redirects=False,
+    ).status_code == 303
+    again = client.post(
+        f"/requests/{request_id}/reject",
+        data=decision_payload(client, request_id),
+    )
     assert again.status_code == 400
     assert "pending" in again.text
     assert _rows()[0].status == STATUS_APPROVED

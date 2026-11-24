@@ -1,6 +1,6 @@
 from app.seed import DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, seed_database
 from tests.test_leave_request import _form_token, _login, _register, _rows
-from tests.test_review_queue import _login_as
+from tests.test_review_queue import _login_as, decision_payload
 
 REASON = 'Trip <img src="x" onerror="alert(1)">'
 COMMENT = "<script>alert(1)</script>"
@@ -37,7 +37,7 @@ def test_request_text_is_escaped_on_the_pages_that_show_it(client):
     assert _login_as(client, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD).status_code == 303
     decided = client.post(
         f"/requests/{request_id}/approve",
-        data={"comment": COMMENT, "expected_status": "pending"},
+        data=decision_payload(client, request_id, comment=COMMENT, expected_status="pending"),
         follow_redirects=True,
     )
     assert COMMENT not in decided.text

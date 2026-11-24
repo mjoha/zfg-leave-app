@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import STATUS_PENDING, STATUS_WITHDRAWN, LeaveRequest
+from app.models import ROLE_ADMINISTRATOR, STATUS_PENDING, STATUS_WITHDRAWN, LeaveRequest, User
 
 
 @dataclass(frozen=True)
@@ -76,6 +76,20 @@ def withdraw_leave_request(db: Session, row: LeaveRequest) -> LeaveRequest:
 
 def get_leave_request(db: Session, request_id: int) -> LeaveRequest | None:
     return db.get(LeaveRequest, request_id)
+
+
+def can_view_leave_request(user: User, row: LeaveRequest) -> bool:
+    return row.user_id == user.id or user.role == ROLE_ADMINISTRATOR
+
+
+def list_pending_reviews(db: Session) -> list[tuple[LeaveRequest, str]]:
+    statement = (
+        select(LeaveRequest, User.display_name)
+        .join(User, User.id == LeaveRequest.user_id)
+        .where(LeaveRequest.status == STATUS_PENDING)
+        .order_by(LeaveRequest.created_at.asc(), LeaveRequest.id.asc())
+    )
+    return [(row, name) for row, name in db.execute(statement).all()]
 
 
 def list_leave_requests_for_user(db: Session, user_id: int) -> list[LeaveRequest]:

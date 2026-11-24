@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Review queue{% endblock %}
+
+{% block content %}
+  <h1>Review queue</h1>
+  <p>Pending leave requests from every employee.</p>
+  {% if reviews %}
+    <table data-testid="review-queue">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Dates</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in reviews %}
+          <tr data-testid="review-row">
+            <td data-testid="review-employee">{{ item.employee }}</td>
+            <td>{{ item.start_date }} to {{ item.end_date }}</td>
+            <td>{{ item.reason }}</td>
+            <td data-testid="request-status">{{ item.status_label }}</td>
+            <td><a href="/requests/{{ item.id }}" data-testid="review-open">Open</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p data-testid="review-empty">No requests are waiting for review.</p>
+  {% endif %}
+{% endblock %}

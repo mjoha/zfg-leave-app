@@ -32,4 +32,7 @@
     </form>
   {% endif %}
   <p><a href="/requests" data-testid="request-detail-back">Back to my requests</a></p>
+  {% if current_user.role == "administrator" %}
+    <p><a href="/reviews" data-testid="review-back">Back to the review queue</a></p>
+  {% endif %}
 {% endblock %}

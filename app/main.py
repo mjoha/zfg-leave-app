@@ -14,15 +14,17 @@ from app.config import get_settings
 from app.database import get_db
 from app.leave import (
     LeaveStateError,
+    can_view_leave_request,
     create_leave_request,
     get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
+    list_pending_reviews,
     status_label,
     validate_leave_request,
     withdraw_leave_request,
 )
-from app.models import STATUS_PENDING, User
+from app.models import ROLE_ADMINISTRATOR, STATUS_PENDING, User
 from app.users import (
     DuplicateEmailError,
     authenticate,
@@ -314,13 +316,42 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
-    if row is None or row.user_id != user.id:
+    if row is None or not can_view_leave_request(user, row):
         return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
     return templates.TemplateResponse(
         request,
         "request_detail.html",
         _detail_context(row, user, [], withdrawn=request.query_params.get("withdrawn") == "1"),
     )
+
+
+def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:
+    return [
+        {
+            "id": row.id,
+            "employee": employee_name,
+            "start_date": row.start_date.isoformat(),
+            "end_date": row.end_date.isoformat(),
+            "reason": row.reason,
+            "status_label": status_label(row.status),
+        }
+        for row, employee_name in rows
+    ]
+
+
+@app.get("/reviews", response_class=HTMLResponse)
+def review_queue(request: Request, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = load_session_user(request, db)
+        rows = list_pending_reviews(db) if user is not None and user.role == ROLE_ADMINISTRATOR else []
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    if user.role != ROLE_ADMINISTRATOR:
+        return templates.TemplateResponse(request, "forbidden.html", {}, status_code=403)
+    return templates.TemplateResponse(request, "review_queue.html", {"reviews": _review_rows(rows)})
 
 
 @app.post("/requests/{request_id}/withdraw")

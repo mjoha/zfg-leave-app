@@ -15,6 +15,9 @@
       {% if current_user %}
         <a href="/requests" data-testid="nav-requests">My requests</a>
         <a href="/requests/new" data-testid="nav-new-request">New request</a>
+        {% if current_user.role == "administrator" %}
+          <a href="/reviews" data-testid="nav-review">Review</a>
+        {% endif %}
         <a href="/profile" data-testid="nav-profile">Profile</a>
         <span data-testid="nav-user">{{ current_user.display_name }}</span>
         <form method="post" action="/logout" data-testid="logout-form">

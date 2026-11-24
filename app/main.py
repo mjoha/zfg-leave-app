@@ -9,8 +9,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.auth import clear_session, establish_session, load_session_user, signed_in_user
 from app.config import get_settings
-from app.database import get_db, get_engine
+from app.database import get_db
 from app.leave import (
     LeaveStateError,
     create_leave_request,
@@ -32,24 +33,6 @@ from app.users import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-
-
-def signed_in_user(request: Request) -> User | None:
-    user_id = request.session.get("user_id")
-    if not isinstance(user_id, int):
-        return None
-    db = Session(get_engine())
-    try:
-        user = db.get(User, user_id)
-        if user is None:
-            request.session.pop("user_id", None)
-            return None
-        db.expunge(user)
-        return user
-    except OperationalError:
-        return None
-    finally:
-        db.close()
 
 
 def _template_defaults(request: Request) -> dict[str, object]:
@@ -167,19 +150,8 @@ def login_submit(
             _login_context(["Email or password is incorrect."], email),
             status_code=400,
         )
-    request.session.clear()
-    request.session["user_id"] = user.id
+    establish_session(request, user.id)
     return RedirectResponse(url="/profile", status_code=303)
-
-
-def _profile_user(request: Request, db: Session) -> User | None:
-    user_id = request.session.get("user_id")
-    if not isinstance(user_id, int):
-        return None
-    user = db.get(User, user_id)
-    if user is None:
-        request.session.pop("user_id", None)
-    return user
 
 
 def _format_timestamp(value) -> str:
@@ -203,7 +175,7 @@ def _profile_context(user: User, errors: list[str], display_name: str, *, saved:
 @app.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request, db: Session = Depends(get_db)) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
@@ -223,7 +195,7 @@ def profile_update(
     db: Session = Depends(get_db),
 ) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
@@ -254,7 +226,7 @@ def _request_form_context(errors: list[str], start_date: str, end_date: str, rea
 @app.get("/requests/new", response_class=HTMLResponse)
 def new_leave_request(request: Request, db: Session = Depends(get_db)) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
@@ -272,7 +244,7 @@ def submit_leave_request(
     db: Session = Depends(get_db),
 ) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
@@ -335,7 +307,7 @@ def _detail_context(row, user: User, errors: list[str], *, withdrawn: bool) -> d
 @app.get("/requests/{request_id}", response_class=HTMLResponse)
 def leave_request_detail(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
         row = get_leave_request(db, request_id) if user is not None else None
     except OperationalError:
         db.rollback()
@@ -354,7 +326,7 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
 @app.post("/requests/{request_id}/withdraw")
 def withdraw_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
         row = get_leave_request(db, request_id) if user is not None else None
     except OperationalError:
         db.rollback()
@@ -381,7 +353,7 @@ def withdraw_request(request: Request, request_id: int, db: Session = Depends(ge
 @app.get("/requests", response_class=HTMLResponse)
 def my_leave_requests(request: Request, db: Session = Depends(get_db)) -> Response:
     try:
-        user = _profile_user(request, db)
+        user = load_session_user(request, db)
         rows = list_leave_requests_for_user(db, user.id) if user is not None else []
     except OperationalError:
         db.rollback()
@@ -400,7 +372,7 @@ def my_leave_requests(request: Request, db: Session = Depends(get_db)) -> Respon
 
 @app.post("/logout")
 def logout(request: Request) -> Response:
-    request.session.clear()
+    clear_session(request)
     return RedirectResponse(url="/", status_code=303)
 
 

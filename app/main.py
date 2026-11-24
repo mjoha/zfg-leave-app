@@ -543,7 +543,14 @@ def edit_leave_request(
     return RedirectResponse(url=f"/requests/{row.id}?edited=1", status_code=303)
 
 
-def _decide(request: Request, request_id: int, db: Session, status: str, comment_raw: str) -> Response:
+def _decide(
+    request: Request,
+    request_id: int,
+    db: Session,
+    status: str,
+    comment_raw: str,
+    expected_status: str,
+) -> Response:
     try:
         user = load_session_user(request, db)
         row = get_leave_request(db, request_id) if user is not None else None
@@ -556,6 +563,19 @@ def _decide(request: Request, request_id: int, db: Session, status: str, comment
         return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
     if user.role != ROLE_ADMINISTRATOR:
         return templates.TemplateResponse(request, "forbidden.html", {}, status_code=403)
+    if expected_status and expected_status != row.status:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(
+                row,
+                user,
+                ["This request changed since the form was opened."],
+                withdrawn=False,
+                comment=comment_raw,
+            ),
+            status_code=400,
+        )
     comment, comment_errors = validate_decision_comment(comment_raw)
     if comment_errors:
         return templates.TemplateResponse(
@@ -584,9 +604,10 @@ def approve_request(
     request: Request,
     request_id: int,
     comment: str = Form(""),
+    expected_status: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
-    return _decide(request, request_id, db, STATUS_APPROVED, comment)
+    return _decide(request, request_id, db, STATUS_APPROVED, comment, expected_status)
 
 
 @app.post("/requests/{request_id}/reject")
@@ -594,9 +615,10 @@ def reject_request(
     request: Request,
     request_id: int,
     comment: str = Form(""),
+    expected_status: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
-    return _decide(request, request_id, db, STATUS_REJECTED, comment)
+    return _decide(request, request_id, db, STATUS_REJECTED, comment, expected_status)
 
 
 def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:

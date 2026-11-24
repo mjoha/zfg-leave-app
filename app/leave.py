@@ -51,6 +51,15 @@ def validate_leave_request(
     return LeaveRequestInput(start_date, end_date, reason), []
 
 
+def status_label(status: str) -> str:
+    labels = {STATUS_PENDING: "Pending"}
+    return labels.get(status, status)
+
+
+def get_leave_request(db: Session, request_id: int) -> LeaveRequest | None:
+    return db.get(LeaveRequest, request_id)
+
+
 def list_leave_requests_for_user(db: Session, user_id: int) -> list[LeaveRequest]:
     statement = (
         select(LeaveRequest)

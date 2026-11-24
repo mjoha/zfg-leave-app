@@ -116,7 +116,8 @@ Interactive controls and important page states use stable `data-testid` attribut
 | Sign in | `login-form`, `login-email`, `login-password`, `login-submit`, `login-error` |
 | Signed-in home | `nav-new-request`, `nav-profile`, `nav-user`, `logout-form`, `logout-submit`, `signed-in-name` |
 | New leave request | `request-form`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error` |
-| My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-empty`, `request-saved`, `request-list-new` |
+| My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-detail-link`, `request-empty`, `request-saved`, `request-list-new` |
+| Request details | `request-detail`, `request-detail-dates`, `request-detail-days`, `request-detail-reason`, `request-status`, `request-detail-submitted`, `request-detail-back` |
 | Profile | `profile-display-name`, `profile-email`, `profile-role`, `profile-created`, `profile-form`, `profile-display-name-input`, `profile-submit`, `profile-saved`, `profile-error` |
 | Missing page | `not-found`, `not-found-home` |
 | Database not ready | `database-unavailable`, `database-unavailable-register` |

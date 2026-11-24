@@ -13,8 +13,10 @@ from app.config import get_settings
 from app.database import get_db, get_engine
 from app.leave import (
     create_leave_request,
+    get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
+    status_label,
     validate_leave_request,
 )
 from app.models import User
@@ -178,18 +180,17 @@ def _profile_user(request: Request, db: Session) -> User | None:
     return user
 
 
-def _format_created(user: User) -> str:
-    created = user.created_at
-    if created.tzinfo is None:
-        return created.strftime("%Y-%m-%d %H:%M")
-    return created.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+def _format_timestamp(value) -> str:
+    if value.tzinfo is None:
+        return value.strftime("%Y-%m-%d %H:%M")
+    return value.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
 def _profile_context(user: User, errors: list[str], display_name: str, *, saved: bool) -> dict[str, object]:
     return {
         "profile_email": user.email,
         "profile_role": role_label(user.role),
-        "profile_created": _format_created(user),
+        "profile_created": _format_timestamp(user.created_at),
         "saved_display_name": user.display_name,
         "display_name": display_name,
         "errors": errors,
@@ -294,14 +295,44 @@ def submit_leave_request(
 def _request_rows(rows: list) -> list[dict[str, object]]:
     return [
         {
+            "id": row.id,
             "start_date": row.start_date.isoformat(),
             "end_date": row.end_date.isoformat(),
             "day_count": inclusive_days(row.start_date, row.end_date),
             "reason": row.reason,
-            "status_label": "Pending" if row.status == "pending" else row.status,
+            "status_label": status_label(row.status),
         }
         for row in rows
     ]
+
+
+def _detail_context(row) -> dict[str, object]:
+    return {
+        "item": {
+            "id": row.id,
+            "start_date": row.start_date.isoformat(),
+            "end_date": row.end_date.isoformat(),
+            "day_count": inclusive_days(row.start_date, row.end_date),
+            "reason": row.reason,
+            "status_label": status_label(row.status),
+            "created": _format_timestamp(row.created_at),
+        }
+    }
+
+
+@app.get("/requests/{request_id}", response_class=HTMLResponse)
+def leave_request_detail(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = _profile_user(request, db)
+        row = get_leave_request(db, request_id) if user is not None else None
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    if row is None or row.user_id != user.id:
+        return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    return templates.TemplateResponse(request, "request_detail.html", _detail_context(row))
 
 
 @app.get("/requests", response_class=HTMLResponse)

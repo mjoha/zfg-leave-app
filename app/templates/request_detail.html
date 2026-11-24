@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Leave request{% endblock %}
+
+{% block content %}
+  <h1>Leave request</h1>
+  <dl class="details" data-testid="request-detail">
+    <dt>Dates</dt>
+    <dd data-testid="request-detail-dates">{{ item.start_date }} to {{ item.end_date }}</dd>
+    <dt>Days</dt>
+    <dd data-testid="request-detail-days">{{ item.day_count }}</dd>
+    <dt>Reason</dt>
+    <dd data-testid="request-detail-reason">{{ item.reason }}</dd>
+    <dt>Status</dt>
+    <dd data-testid="request-status">{{ item.status_label }}</dd>
+    <dt>Submitted</dt>
+    <dd data-testid="request-detail-submitted">{{ item.created }}</dd>
+  </dl>
+  <p><a href="/requests" data-testid="request-detail-back">Back to my requests</a></p>
+{% endblock %}

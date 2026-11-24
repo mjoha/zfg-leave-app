@@ -21,38 +21,74 @@ This repository is the *target application* for a later zero-player-game replay.
 ## Key rule
 Never fabricate commits, test results, successful builds, or a bug that was never demonstrated. New features must actually work. Replays can later add fictional narrative around genuine code history.
 
-## Running leave-app
+## Quickstart
 
 Python 3.12.10. From the repository root:
 
 ```text
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements-dev.txt
+.venv\Scripts\python -m app.db_init
 .venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
-Configuration is read from the environment when a page or database connection is requested. `APP_NAME` defaults to `leave-app`. `DATABASE_URL` defaults to `sqlite:///./data/leave.db`. When `DATABASE_URL` is unset, `LEAVE_DATA_DIR` chooses the directory for `leave.db`.
+`db_init` creates any missing tables in the local SQLite file. It does not delete existing accounts. Starting `uvicorn` does not create the database; run `db_init` first. The container command does both.
 
-Initialize the local database before registering anyone. This creates missing tables and does not erase an existing file:
+Open `http://127.0.0.1:8000/`.
+
+### Health check
+
+`GET /health` does not read the database or a session. A running process returns HTTP 200 and this body:
 
 ```text
-.venv\Scripts\python -m app.db_init
+{"status":"ok"}
 ```
 
-Open `http://127.0.0.1:8000/`. `GET /health` returns `{"status":"ok"}`. Create an employee account at `http://127.0.0.1:8000/register`. Registration does not sign you in, and no demo account is seeded yet.
+```text
+curl http://127.0.0.1:8000/health
+```
 
-Tests, with the local CI-equivalent command (no network and no external services):
+### Use the app
+
+There is no seeded demo account yet.
+
+1. Create an employee at `http://127.0.0.1:8000/register`. Registration stores the account and does not sign you in.
+2. Sign in at `http://127.0.0.1:8000/login`. The session cookie is named `leave_session`. It is HttpOnly, SameSite=Lax, and expires after 8 hours. Sign-in then opens your profile.
+3. On the profile page, change the display name. Email and role stay as stored.
+4. Use Sign out in the header to clear the session.
+
+### Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `APP_NAME` | `leave-app` | Name shown in the header and titles |
+| `DATABASE_URL` | `sqlite:///./data/leave.db` | SQLAlchemy database URL |
+| `LEAVE_DATA_DIR` | `data` | Directory for `leave.db` when `DATABASE_URL` is unset, and for the session secret file |
+| `SESSION_SECRET` | random file `data/session_secret` | Signs the session cookie. Set this to keep the same secret across restarts without the file |
+| `SESSION_HTTPS_ONLY` | off | When `true`, the session cookie is marked Secure. Leave it off for local HTTP |
+
+Restart the process after changing session settings. The value used at startup is the one that signs cookies.
+
+### Reset local data
+
+Stop the app, delete `data/leave.db` and `data/session_secret`, then run `python -m app.db_init` again. That removes local accounts and invalidates old session cookies. Nothing in the database is a real credential.
+
+### Tests
+
+The local CI-equivalent command does not use a network or an external service. It checks for Python 3.12, compiles `app` and `tests`, and runs `pytest -q`:
 
 ```text
 .venv\Scripts\python scripts/ci_local.py
 ```
 
-That command checks for Python 3.12, compiles `app` and `tests`, and runs `pytest -q`.
+### Container
 
-Container (port 8000):
+Port 8000. The image initializes the database, then serves the app. The SQLite file and session secret persist in `./data` on the host.
 
 ```text
 docker compose up --build
 ```
+
+Health: `http://127.0.0.1:8000/health`.

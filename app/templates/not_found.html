@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found{% endblock %}
+
+{% block content %}
+  <h1 data-testid="not-found">Page not found</h1>
+  <p>That address is not part of {{ app_name }}.</p>
+  <p><a href="/" data-testid="not-found-home">Back to home</a></p>
+{% endblock %}

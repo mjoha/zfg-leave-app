@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+  <h1 data-testid="landing-title">Leave requests, on this computer</h1>
+  <p data-testid="landing-summary">
+    {{ app_name }} keeps leave records for a small team. This installation is local:
+    pages and data stay on the machine that runs it.
+  </p>
+{% endblock %}

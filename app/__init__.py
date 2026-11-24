@@ -1,0 +1,1 @@
+"""Local leave-request application."""

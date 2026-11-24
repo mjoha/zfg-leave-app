@@ -20,3 +20,29 @@ This repository is the *target application* for a later zero-player-game replay.
 
 ## Key rule
 Never fabricate commits, test results, successful builds, or a bug that was never demonstrated. New features must actually work. Replays can later add fictional narrative around genuine code history.
+
+## Running leave-app
+
+Python 3.12.10. From the repository root:
+
+```text
+py -3.12 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements-dev.txt
+.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
+
+Open `http://127.0.0.1:8000/`. `GET /health` returns `{"status":"ok"}`.
+
+Tests:
+
+```text
+.venv\Scripts\python -m pytest -q
+```
+
+Container (port 8000):
+
+```text
+docker compose up --build
+```

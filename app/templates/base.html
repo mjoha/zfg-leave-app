@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Home{% endblock %} · {{ app_name }}</title>
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" data-testid="brand-link">{{ app_name }}</a>
+    <nav aria-label="Primary">
+      <a href="/" data-testid="nav-home">Home</a>
+      {% block nav_extra %}{% endblock %}
+    </nav>
+  </header>
+  <main id="content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p>Local leave records. Nothing on this page is loaded from another site.</p>
+  </footer>
+</body>
+</html>

@@ -13,6 +13,7 @@
     <nav aria-label="Primary">
       <a href="/" data-testid="nav-home">Home</a>
       {% if current_user %}
+        <a href="/requests/new" data-testid="nav-new-request">New request</a>
         <a href="/profile" data-testid="nav-profile">Profile</a>
         <span data-testid="nav-user">{{ current_user.display_name }}</span>
         <form method="post" action="/logout" data-testid="logout-form">

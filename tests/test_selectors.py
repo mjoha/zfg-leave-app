@@ -32,6 +32,7 @@ LOGIN_FORM = (
 SIGNED_IN_NAV = (
     "brand-link",
     "nav-home",
+    "nav-new-request",
     "nav-profile",
     "nav-user",
     "logout-form",

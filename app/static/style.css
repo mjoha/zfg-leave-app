@@ -112,7 +112,8 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+textarea {
   font: inherit;
   color: var(--text);
   background: var(--surface);

@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import date, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -11,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.database import get_db, get_engine
+from app.leave import create_leave_request, inclusive_days, validate_leave_request
 from app.models import User
 from app.users import (
     DuplicateEmailError,
@@ -231,6 +232,86 @@ def profile_update(
     user.display_name = cleaned
     db.commit()
     return RedirectResponse(url="/profile?saved=1", status_code=303)
+
+
+def _request_form_context(errors: list[str], start_date: str, end_date: str, reason: str) -> dict[str, object]:
+    return {
+        "errors": errors,
+        "start_date": start_date,
+        "end_date": end_date,
+        "reason": reason,
+    }
+
+
+@app.get("/requests/new", response_class=HTMLResponse)
+def new_leave_request(request: Request, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = _profile_user(request, db)
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse(request, "request_form.html", _request_form_context([], "", "", ""))
+
+
+@app.post("/requests")
+def submit_leave_request(
+    request: Request,
+    start_date: str = Form(""),
+    end_date: str = Form(""),
+    reason: str = Form(""),
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        user = _profile_user(request, db)
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    data, errors = validate_leave_request(start_date, end_date, reason)
+    if data is None:
+        return templates.TemplateResponse(
+            request,
+            "request_form.html",
+            _request_form_context(errors, start_date, end_date, reason),
+            status_code=400,
+        )
+    try:
+        create_leave_request(db, user.id, data)
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    return RedirectResponse(
+        url=f"/requests/created?start={data.start_date.isoformat()}&end={data.end_date.isoformat()}",
+        status_code=303,
+    )
+
+
+@app.get("/requests/created", response_class=HTMLResponse)
+def leave_request_created(request: Request, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = _profile_user(request, db)
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    start_raw = request.query_params.get("start", "")
+    end_raw = request.query_params.get("end", "")
+    try:
+        start_date = date.fromisoformat(start_raw)
+        end_date = date.fromisoformat(end_raw)
+    except ValueError:
+        start_date = None
+        end_date = None
+    day_count = inclusive_days(start_date, end_date) if start_date and end_date and end_date >= start_date else None
+    return templates.TemplateResponse(
+        request,
+        "request_created.html",
+        {"start_date": start_raw, "end_date": end_raw, "day_count": day_count},
+    )
 
 
 @app.post("/logout")

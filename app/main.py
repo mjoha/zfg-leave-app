@@ -330,6 +330,7 @@ def _request_rows(rows: list) -> list[dict[str, object]]:
             "end_date": row.end_date.isoformat(),
             "day_count": inclusive_days(row.start_date, row.end_date),
             "reason": row.reason,
+            "status": row.status,
             "status_label": status_label(row.status),
         }
         for row in rows
@@ -353,6 +354,7 @@ def _detail_context(
             "end_date": row.end_date.isoformat(),
             "day_count": inclusive_days(row.start_date, row.end_date),
             "reason": row.reason,
+            "status": row.status,
             "status_label": status_label(row.status),
             "created": _format_timestamp(row.created_at),
             "decision_comment": row.decision_comment,
@@ -370,11 +372,19 @@ def _detail_context(
 
 
 def _timeline(row) -> list[dict[str, str]]:
-    events = [{"label": "Submitted", "when": _format_timestamp(row.created_at), "comment": ""}]
+    events = [
+        {
+            "label": "Submitted",
+            "status": "submitted",
+            "when": _format_timestamp(row.created_at),
+            "comment": "",
+        }
+    ]
     if row.status != STATUS_PENDING:
         events.append(
             {
                 "label": status_label(row.status),
+                "status": row.status,
                 "when": _format_timestamp(row.decided_at) if row.decided_at is not None else "",
                 "comment": row.decision_comment or "",
             }
@@ -546,6 +556,7 @@ def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:
             "start_date": row.start_date.isoformat(),
             "end_date": row.end_date.isoformat(),
             "reason": row.reason,
+            "status": row.status,
             "status_label": status_label(row.status),
         }
         for row, employee_name in rows

@@ -22,7 +22,7 @@
             <td data-testid="review-employee">{{ item.employee }}</td>
             <td>{{ item.start_date }} to {{ item.end_date }}</td>
             <td>{{ item.reason }}</td>
-            <td data-testid="request-status">{{ item.status_label }}</td>
+            <td><span class="status-badge status-{{ item.status }}" data-testid="request-status">{{ item.status_label }}</span></td>
             <td><a href="/requests/{{ item.id }}" data-testid="review-open">Open</a></td>
           </tr>
         {% endfor %}

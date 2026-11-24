@@ -27,7 +27,7 @@
             <td>{{ item.start_date }} to {{ item.end_date }}</td>
             <td>{{ item.day_count }}</td>
             <td>{{ item.reason }}</td>
-            <td data-testid="request-status">{{ item.status_label }}</td>
+            <td><span class="status-badge status-{{ item.status }}" data-testid="request-status">{{ item.status_label }}</span></td>
             <td><a href="/requests/{{ item.id }}" data-testid="request-detail-link">View</a></td>
           </tr>
         {% endfor %}

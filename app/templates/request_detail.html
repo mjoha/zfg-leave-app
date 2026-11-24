@@ -24,7 +24,7 @@
   <ol class="request-timeline" data-testid="request-timeline">
     {% for event in timeline %}
       <li data-testid="request-timeline-event">
-        <span data-testid="request-timeline-label">{{ event.label }}</span>
+        <span class="status-badge status-{{ event.status }}" data-testid="request-timeline-label">{{ event.label }}</span>
         {% if event.when %}
           <time data-testid="request-timeline-when">{{ event.when }}</time>
         {% endif %}
@@ -42,7 +42,7 @@
     <dt>Reason</dt>
     <dd data-testid="request-detail-reason">{{ item.reason }}</dd>
     <dt>Status</dt>
-    <dd data-testid="request-status">{{ item.status_label }}</dd>
+    <dd><span class="status-badge status-{{ item.status }}" data-testid="request-status">{{ item.status_label }}</span></dd>
     {% if item.decision_comment %}
       <dt>Comment</dt>
       <dd data-testid="request-decision-comment">{{ item.decision_comment }}</dd>

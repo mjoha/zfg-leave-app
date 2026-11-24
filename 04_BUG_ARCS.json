@@ -1,0 +1,106 @@
+{
+  "purpose": "Candidate safe, local business-logic defects; scheduling must be validated, never fabricate",
+  "arcs": [
+    {
+      "id": "B-001",
+      "related_feature": "F-020",
+      "feature_day": 10,
+      "planned_fix_day": 4,
+      "seed_idea": "End date validation initially handles the simple path but omits one form submit route",
+      "reproduction": "Submitting end before start incorrectly succeeds",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": false
+    },
+    {
+      "id": "B-002",
+      "related_feature": "F-023",
+      "feature_day": 12,
+      "planned_fix_day": 14,
+      "seed_idea": "Balance reservation includes withdrawn requests",
+      "reproduction": "Withdraw request and verify reserved balance incorrectly remains",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-003",
+      "related_feature": "F-005",
+      "feature_day": 3,
+      "planned_fix_day": 6,
+      "seed_idea": "Form POST initially accepts duplicate submission",
+      "reproduction": "Submit twice rapidly; two requests appear",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-004",
+      "related_feature": "F-010",
+      "feature_day": 5,
+      "planned_fix_day": 14,
+      "seed_idea": "Balance logic treats rejected status as used",
+      "reproduction": "Reject and check available balance",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-005",
+      "related_feature": "F-013",
+      "feature_day": 7,
+      "planned_fix_day": 13,
+      "seed_idea": "Request edit bypasses overlap check",
+      "reproduction": "Edit into conflicting range",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-006",
+      "related_feature": "F-019",
+      "feature_day": 10,
+      "planned_fix_day": 13,
+      "seed_idea": "Calendar date math does not split across Jan 1",
+      "reproduction": "Create Dec\u2013Jan request and inspect yearly tally",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-007",
+      "related_feature": "F-016",
+      "feature_day": 8,
+      "planned_fix_day": 10,
+      "seed_idea": "Month boundary rendering drops final day",
+      "reproduction": "Create request ending on first/last day of month",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-010",
+      "related_feature": "F-030",
+      "feature_day": 15,
+      "planned_fix_day": 16,
+      "seed_idea": "Half-day ledger initially treats half-day as whole day",
+      "reproduction": "Submit half-day and compare balance",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-012",
+      "related_feature": "F-031",
+      "feature_day": 16,
+      "planned_fix_day": 17,
+      "seed_idea": "Holiday exclusion absent from holiday-aware branch",
+      "reproduction": "Make request including configured holiday",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    },
+    {
+      "id": "B-020",
+      "related_feature": "F-046",
+      "feature_day": 23,
+      "planned_fix_day": 25,
+      "seed_idea": "CSV output skips escaping for embedded newline",
+      "reproduction": "Export request with comma/newline comment",
+      "policy": "Optional narrative arc; only seed if feature already implemented and fix is scheduled later; otherwise implement real bugfix without claiming a prior defect",
+      "eligible": true
+    }
+  ],
+  "note": "If eligible=false, do not seed as an earlier historical bug; reschedule explicitly or treat as regression coverage. Keep security controls correct."
+}

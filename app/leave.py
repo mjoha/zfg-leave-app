@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import STATUS_PENDING, LeaveRequest
+from app.models import STATUS_PENDING, STATUS_WITHDRAWN, LeaveRequest
 
 
 @dataclass(frozen=True)
@@ -51,9 +51,27 @@ def validate_leave_request(
     return LeaveRequestInput(start_date, end_date, reason), []
 
 
+class LeaveStateError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
 def status_label(status: str) -> str:
-    labels = {STATUS_PENDING: "Pending"}
+    labels = {
+        STATUS_PENDING: "Pending",
+        STATUS_WITHDRAWN: "Withdrawn",
+    }
     return labels.get(status, status)
+
+
+def withdraw_leave_request(db: Session, row: LeaveRequest) -> LeaveRequest:
+    if row.status != STATUS_PENDING:
+        raise LeaveStateError("Only a pending request can be withdrawn.")
+    row.status = STATUS_WITHDRAWN
+    db.commit()
+    db.refresh(row)
+    return row
 
 
 def get_leave_request(db: Session, request_id: int) -> LeaveRequest | None:

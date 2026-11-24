@@ -8,6 +8,7 @@ from app.database import Base
 ROLE_EMPLOYEE = "employee"
 ROLE_ADMINISTRATOR = "administrator"
 STATUS_PENDING = "pending"
+STATUS_WITHDRAWN = "withdrawn"
 
 
 def utcnow() -> datetime:

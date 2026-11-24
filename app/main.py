@@ -12,14 +12,16 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import get_settings
 from app.database import get_db, get_engine
 from app.leave import (
+    LeaveStateError,
     create_leave_request,
     get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
     status_label,
     validate_leave_request,
+    withdraw_leave_request,
 )
-from app.models import User
+from app.models import STATUS_PENDING, User
 from app.users import (
     DuplicateEmailError,
     authenticate,
@@ -306,7 +308,7 @@ def _request_rows(rows: list) -> list[dict[str, object]]:
     ]
 
 
-def _detail_context(row) -> dict[str, object]:
+def _detail_context(row, user: User, errors: list[str], *, withdrawn: bool) -> dict[str, object]:
     return {
         "item": {
             "id": row.id,
@@ -316,7 +318,10 @@ def _detail_context(row) -> dict[str, object]:
             "reason": row.reason,
             "status_label": status_label(row.status),
             "created": _format_timestamp(row.created_at),
-        }
+            "can_withdraw": row.status == STATUS_PENDING and row.user_id == user.id,
+        },
+        "errors": errors,
+        "withdrawn": withdrawn,
     }
 
 
@@ -332,7 +337,38 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
         return RedirectResponse(url="/login", status_code=303)
     if row is None or row.user_id != user.id:
         return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
-    return templates.TemplateResponse(request, "request_detail.html", _detail_context(row))
+    return templates.TemplateResponse(
+        request,
+        "request_detail.html",
+        _detail_context(row, user, [], withdrawn=request.query_params.get("withdrawn") == "1"),
+    )
+
+
+@app.post("/requests/{request_id}/withdraw")
+def withdraw_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = _profile_user(request, db)
+        row = get_leave_request(db, request_id) if user is not None else None
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    if row is None or row.user_id != user.id:
+        return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
+    try:
+        withdraw_leave_request(db, row)
+    except LeaveStateError as exc:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, [exc.message], withdrawn=False),
+            status_code=400,
+        )
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    return RedirectResponse(url=f"/requests/{row.id}?withdrawn=1", status_code=303)
 
 
 @app.get("/requests", response_class=HTMLResponse)

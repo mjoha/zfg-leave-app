@@ -1,0 +1,60 @@
+{
+  "day": 2,
+  "tickets": ["F-003", "F-004", "C-003", "C-010"],
+  "commits": [
+    {
+      "sha": "99283d2959b1ce10f2ae9e226b399b9a7810f484",
+      "ticket": "F-003",
+      "message": "F-003: add session login and logout."
+    },
+    {
+      "sha": "3eaa5667b46080e3040c801771cd3798c24829a6",
+      "ticket": "F-004",
+      "message": "F-004: add profile details and display-name editing."
+    },
+    {
+      "sha": "6f3ce259a64f55c7ffeeb8a0d6374ed77e5ef1c7",
+      "ticket": "C-003",
+      "message": "C-003: document the quickstart and health check."
+    },
+    {
+      "sha": "0c4078c34bcf61cc64320ecf6ee97b283796d9de",
+      "ticket": "C-010",
+      "message": "C-010: lock browser-test selectors."
+    }
+  ],
+  "tests": [
+    {
+      "command": ".venv\\Scripts\\python scripts/ci_local.py",
+      "exit_code": 0,
+      "summary": "Python 3.12.10, compile app, compile tests, pytest -q: 36 passed in 8.64s. ci_local: passed."
+    },
+    {
+      "command": "uvicorn app.main:app --host 127.0.0.1 --port 8000, then curl.exe against a temp SQLite file",
+      "exit_code": 0,
+      "summary": "GET /health 200 body {\"status\":\"ok\"}. Signed-out home contained nav-login and landing-login. POST /register 303 Location /account-created. POST /login 303 Location /profile and set leave_session with Max-Age=28800, HttpOnly, and SameSite=Lax. GET /profile showed day02@example.com, Day Two, and Employee. POST /profile 303 Location /profile?saved=1, then the page showed profile-saved and Day Two Updated. POST /logout 303 Location / and cleared the cookie. Home afterward contained nav-login and not signed-in-name. Stored row: day02@example.com, Day Two Updated, employee, pbkdf2_sha256$600000$ hash that did not contain the password."
+    },
+    {
+      "command": "docker compose build",
+      "exit_code": 0,
+      "summary": "Rebuilt zfg-leave-app-leave-app from python:3.12.10-slim-bookworm. The image installed itsdangerous==2.2.0."
+    },
+    {
+      "command": "docker compose up -d, then curl.exe http://127.0.0.1:8000/health, POST /register, POST /login, and GET /profile",
+      "exit_code": 0,
+      "summary": "GET /health body was {\"status\":\"ok\"}. Container health status became healthy. POST /register 303 Location /account-created. POST /login 303 Location /profile with an HttpOnly SameSite=Lax leave_session cookie. GET /profile showed container02@example.com and Employee. Container was stopped with docker compose down. ./data/leave.db and ./data/session_secret from the smoke run were deleted."
+    }
+  ],
+  "release": null,
+  "notes": [
+    "Day 02 is not a release checkpoint, so no tag was created.",
+    "No database columns were added. Profile editing changes display_name on the existing users table. python -m app.db_init still creates missing tables and does not alter existing ones. Alembic remains C-004 on day 03.",
+    "No demo account was seeded. C-002 is day 03.",
+    "When SESSION_SECRET is unset, the app writes a random secret to data/session_secret. That file is gitignored. Tests set SESSION_SECRET=test-session-secret before importing the app. SESSION_HTTPS_ONLY defaults off so local HTTP can keep the cookie.",
+    "The session cookie is HttpOnly and SameSite=Lax with Max-Age 28800. There is no separate CSRF form token.",
+    "Successful sign-in redirects to /profile. Registration still does not start a session.",
+    "Registration still accepts ASCII email addresses only.",
+    "No intentional defect was introduced. No eligible bug arc is scheduled on day 02.",
+    "Routes added: GET /login, POST /login, POST /logout, GET /profile, POST /profile."
+  ]
+}

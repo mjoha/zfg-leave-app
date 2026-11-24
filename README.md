@@ -33,7 +33,7 @@ py -3.12 -m venv .venv
 
 On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
-`db_init` applies the Alembic migrations in `alembic/versions` and does not delete existing accounts. The current head revision is `0001_initial`. Starting `uvicorn` does not migrate the database; run `db_init` first. The container migrates, seeds demo data, and then serves.
+`db_init` applies the Alembic migrations in `alembic/versions` and does not delete existing accounts. The current head revision is `0003_submission`. Starting `uvicorn` does not migrate the database; run `db_init` first. The container migrates, seeds demo data, and then serves.
 
 Open `http://127.0.0.1:8000/`.
 
@@ -68,7 +68,9 @@ Running the seed again does not duplicate those rows or reset a display name you
 2. Sign in at `http://127.0.0.1:8000/login`. The session cookie is named `leave_session`. It is HttpOnly, SameSite=Lax, and expires after 8 hours. Sign-in then opens your profile.
 3. On the profile page, change the display name. Email and role stay as stored.
 4. Use Sign out in the header to clear the session.
-5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. My requests then lists only that account's pending requests.
+5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. My requests then lists only that account's requests. Open a row for its details. A pending request can be withdrawn by its owner.
+6. Submitting the same new-request form twice keeps one request. Open New request again to create another.
+7. An administrator opens Review, then approves or rejects a pending request. A comment is optional and is shown on the request. The status timeline lists submission and the later decision or withdrawal.
 
 ### Configuration
 
@@ -88,7 +90,7 @@ Stop the app, delete `data/leave.db` and `data/session_secret`, then run `python
 
 ### Tests
 
-The local CI-equivalent command does not use a network or an external service. It checks for Python 3.12, compiles `app` and `tests`, runs Ruff and mypy, and then runs `pytest -q`:
+The local CI-equivalent command does not use a network or an external service. It checks for Python 3.12, compiles `app` and `tests`, runs Ruff and mypy, and then runs `pytest -q`. `tests/test_smoke.py` signs in as both demo accounts and approves the sample request:
 
 ```text
 .venv\Scripts\python scripts/ci_local.py

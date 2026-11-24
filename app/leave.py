@@ -13,6 +13,7 @@ from app.models import (
     LeaveRequest,
     User,
 )
+from app.validation import ErrorList
 
 
 @dataclass(frozen=True)
@@ -38,24 +39,24 @@ def validate_leave_request(
     end_raw: str,
     reason_raw: str,
 ) -> tuple[LeaveRequestInput | None, list[str]]:
-    errors: list[str] = []
+    errors = ErrorList()
     start_date = _parse_date(start_raw)
     end_date = _parse_date(end_raw)
     if start_date is None:
-        errors.append("Enter a start date as YYYY-MM-DD.")
+        errors.add("Enter a start date as YYYY-MM-DD.")
     if end_date is None:
-        errors.append("Enter an end date as YYYY-MM-DD.")
+        errors.add("Enter an end date as YYYY-MM-DD.")
     if start_date is not None and end_date is not None and end_date < start_date:
-        errors.append("End date must be on or after the start date.")
+        errors.add("End date must be on or after the start date.")
 
     reason = reason_raw.strip()
     if not reason or len(reason) > 500:
-        errors.append("Reason must be between 1 and 500 characters.")
+        errors.add("Reason must be between 1 and 500 characters.")
     elif any(ord(character) < 32 and character not in "\n\t" for character in reason):
-        errors.append("Reason cannot include control characters.")
+        errors.add("Reason cannot include control characters.")
 
     if errors or start_date is None or end_date is None:
-        return None, errors
+        return None, errors.messages()
     return LeaveRequestInput(start_date, end_date, reason), []
 
 

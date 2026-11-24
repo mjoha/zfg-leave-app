@@ -34,6 +34,7 @@ from app.users import (
     validate_display_name,
     validate_registration,
 )
+from app.validation import ErrorList
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -129,11 +130,14 @@ def login_submit(
     password: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
+    errors = ErrorList()
     if not email.strip() or not password:
+        errors.add("Enter your email and password.")
+    if errors:
         return templates.TemplateResponse(
             request,
             "login.html",
-            _login_context(["Enter your email and password."], email),
+            _login_context(errors.messages(), email),
             status_code=400,
         )
     try:

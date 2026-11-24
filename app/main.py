@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import clear_session, establish_session, load_session_user, signed_in_user
-from app.calendar_view import month_weeks
+from app.calendar_view import month_weeks, week_row
 from app.config import get_settings
 from app.database import get_db
 from app.leave import (
@@ -713,10 +713,44 @@ def calendar_month(
         "calendar_month.html",
         {
             "year": shown_year,
+            "month": shown_month,
             "month_name": calendar.month_name[shown_month],
             "weeks": month_weeks(shown_year, shown_month, rows),
             "error": "",
         },
+    )
+
+
+@app.get("/calendar/week", response_class=HTMLResponse)
+def calendar_week(
+    request: Request,
+    day: str = "",
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        user = load_session_user(request, db)
+        rows = list_leave_requests_for_user(db, user.id) if user is not None else []
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    anchor = date.today()
+    if day:
+        try:
+            anchor = date.fromisoformat(day)
+        except ValueError:
+            return templates.TemplateResponse(
+                request,
+                "calendar_week.html",
+                {"start": "", "end": "", "days": [], "error": "Enter a date as YYYY-MM-DD."},
+                status_code=400,
+            )
+    days = week_row(anchor, rows)
+    return templates.TemplateResponse(
+        request,
+        "calendar_week.html",
+        {"start": days[0]["date"], "end": days[-1]["date"], "days": days, "error": ""},
     )
 
 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Week{% endblock %}
+
+{% block content %}
+  <h1 data-testid="calendar-week-title">{{ start }} to {{ end }}</h1>
+  {% if error %}
+    <p class="errors" data-testid="calendar-error">{{ error }}</p>
+  {% endif %}
+  <table class="calendar" data-testid="calendar-week">
+    <thead>
+      <tr>
+        <th>Mon</th>
+        <th>Tue</th>
+        <th>Wed</th>
+        <th>Thu</th>
+        <th>Fri</th>
+        <th>Sat</th>
+        <th>Sun</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        {% for day in days %}
+          <td {% if day.date %}data-date="{{ day.date }}"{% endif %} data-testid="calendar-day">
+            {% if day.day %}{{ day.day }}{% endif %}
+            {% for item in day.requests %}
+              <a href="/requests/{{ item.id }}" data-testid="calendar-request">{{ item.reason }}</a>
+            {% endfor %}
+          </td>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table>
+  <p><a href="/calendar" data-testid="calendar-back-month">Month</a></p>
+{% endblock %}

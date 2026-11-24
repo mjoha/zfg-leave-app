@@ -4,6 +4,9 @@
 
 {% block content %}
   <h1 data-testid="calendar-title">{{ month_name }} {{ year }}</h1>
+  {% if month %}
+    <p><a href="/calendar/week?day={{ year }}-{{ '%02d' % month }}-01" data-testid="calendar-open-week">Open week</a></p>
+  {% endif %}
   {% if error %}
     <p class="errors" data-testid="calendar-error">{{ error }}</p>
   {% endif %}

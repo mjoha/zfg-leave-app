@@ -7,6 +7,9 @@
   {% if saved %}
     <p class="notice" data-testid="request-saved">Request saved.</p>
   {% endif %}
+  {% if duplicate %}
+    <p class="notice" data-testid="request-duplicate">That form was already submitted.</p>
+  {% endif %}
   {% if requests %}
     <table data-testid="request-list">
       <thead>

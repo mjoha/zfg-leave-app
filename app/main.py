@@ -1,3 +1,4 @@
+import secrets
 from datetime import timezone
 from pathlib import Path
 
@@ -15,13 +16,14 @@ from app.database import get_db
 from app.leave import (
     LeaveStateError,
     can_view_leave_request,
-    create_leave_request,
+    create_leave_request_once,
     decide_leave_request,
     get_leave_request,
     inclusive_days,
     list_leave_requests_for_user,
     list_pending_reviews,
     status_label,
+    submission_token_used,
     validate_decision_comment,
     validate_leave_request,
     withdraw_leave_request,
@@ -222,13 +224,26 @@ def profile_update(
     return RedirectResponse(url="/profile?saved=1", status_code=303)
 
 
-def _request_form_context(errors: list[str], start_date: str, end_date: str, reason: str) -> dict[str, object]:
+def _request_form_context(
+    errors: list[str],
+    start_date: str,
+    end_date: str,
+    reason: str,
+    form_token: str,
+) -> dict[str, object]:
     return {
         "errors": errors,
         "start_date": start_date,
         "end_date": end_date,
         "reason": reason,
+        "form_token": form_token,
     }
+
+
+def _new_form_token(request: Request) -> str:
+    token = secrets.token_urlsafe(32)
+    request.session["leave_form_token"] = token
+    return token
 
 
 @app.get("/requests/new", response_class=HTMLResponse)
@@ -240,7 +255,11 @@ def new_leave_request(request: Request, db: Session = Depends(get_db)) -> Respon
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
-    return templates.TemplateResponse(request, "request_form.html", _request_form_context([], "", "", ""))
+    return templates.TemplateResponse(
+        request,
+        "request_form.html",
+        _request_form_context([], "", "", "", _new_form_token(request)),
+    )
 
 
 @app.post("/requests")
@@ -249,6 +268,7 @@ def submit_leave_request(
     start_date: str = Form(""),
     end_date: str = Form(""),
     reason: str = Form(""),
+    form_token: str = Form(""),
     db: Session = Depends(get_db),
 ) -> Response:
     try:
@@ -258,26 +278,46 @@ def submit_leave_request(
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
+    expected = request.session.get("leave_form_token")
+    posted_token = form_token.strip()
+    if not isinstance(expected, str) or posted_token != expected or len(posted_token) > 64:
+        if posted_token and submission_token_used(db, posted_token):
+            return RedirectResponse(url="/requests?duplicate=1", status_code=303)
+        return templates.TemplateResponse(
+            request,
+            "request_form.html",
+            _request_form_context(
+                ["Open the new-request form and submit it once."],
+                start_date,
+                end_date,
+                reason,
+                _new_form_token(request),
+            ),
+            status_code=400,
+        )
     data, errors = validate_leave_request(start_date, end_date, reason)
     if data is None:
         return templates.TemplateResponse(
             request,
             "request_form.html",
-            _request_form_context(errors, start_date, end_date, reason),
+            _request_form_context(errors, start_date, end_date, reason, posted_token),
             status_code=400,
         )
     try:
-        create_leave_request(db, user.id, data)
+        created = create_leave_request_once(db, user.id, data, posted_token)
     except LeaveStateError as exc:
         return templates.TemplateResponse(
             request,
             "request_form.html",
-            _request_form_context([exc.message], start_date, end_date, reason),
+            _request_form_context([exc.message], start_date, end_date, reason, posted_token),
             status_code=400,
         )
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    request.session.pop("leave_form_token", None)
+    if created is None:
+        return RedirectResponse(url="/requests?duplicate=1", status_code=303)
     return RedirectResponse(url="/requests?saved=1", status_code=303)
 
 
@@ -321,7 +361,21 @@ def _detail_context(
         "withdrawn": withdrawn,
         "decided": decided,
         "comment": comment,
+        "timeline": _timeline(row),
     }
+
+
+def _timeline(row) -> list[dict[str, str]]:
+    events = [{"label": "Submitted", "when": _format_timestamp(row.created_at), "comment": ""}]
+    if row.status != STATUS_PENDING:
+        events.append(
+            {
+                "label": status_label(row.status),
+                "when": _format_timestamp(row.decided_at) if row.decided_at is not None else "",
+                "comment": row.decision_comment or "",
+            }
+        )
+    return events
 
 
 @app.get("/requests/{request_id}", response_class=HTMLResponse)
@@ -477,6 +531,7 @@ def my_leave_requests(request: Request, db: Session = Depends(get_db)) -> Respon
         {
             "requests": _request_rows(rows),
             "saved": request.query_params.get("saved") == "1",
+            "duplicate": request.query_params.get("duplicate") == "1",
         },
     )
 

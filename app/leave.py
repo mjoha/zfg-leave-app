@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -11,6 +12,7 @@ from app.models import (
     STATUS_REJECTED,
     STATUS_WITHDRAWN,
     LeaveRequest,
+    SubmissionToken,
     User,
     utcnow,
 )
@@ -113,6 +115,7 @@ def withdraw_leave_request(db: Session, row: LeaveRequest) -> LeaveRequest:
     if row.status != STATUS_PENDING:
         raise LeaveStateError("Only a pending request can be withdrawn.")
     row.status = STATUS_WITHDRAWN
+    row.decided_at = utcnow()
     db.commit()
     db.refresh(row)
     return row
@@ -157,5 +160,37 @@ def create_leave_request(db: Session, user_id: int, data: LeaveRequestInput) -> 
     )
     db.add(row)
     db.commit()
+    db.refresh(row)
+    return row
+
+
+def submission_token_used(db: Session, token: str) -> bool:
+    return db.get(SubmissionToken, token) is not None
+
+
+def create_leave_request_once(
+    db: Session,
+    user_id: int,
+    data: LeaveRequestInput,
+    token: str,
+) -> LeaveRequest | None:
+    """Save a request for a form token. A repeated token does not create another row."""
+    if data.end_date < data.start_date:
+        raise LeaveStateError("End date must be on or after the start date.")
+    row = LeaveRequest(
+        user_id=user_id,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        reason=data.reason,
+        status=STATUS_PENDING,
+    )
+    db.add(row)
+    db.flush()
+    db.add(SubmissionToken(token=token, leave_request_id=row.id))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return None
     db.refresh(row)
     return row

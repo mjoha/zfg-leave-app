@@ -13,6 +13,7 @@
     </ul>
   {% endif %}
   <form method="post" action="/requests" data-testid="request-form">
+    <input type="hidden" name="form_token" value="{{ form_token }}" data-testid="request-form-token">
     <label for="start_date">Start date</label>
     <input id="start_date" name="start_date" type="date" value="{{ start_date }}" data-testid="request-start" required>
 
@@ -24,4 +25,15 @@
 
     <button type="submit" data-testid="request-submit">Submit request</button>
   </form>
+  <script>
+    const requestForm = document.querySelector("[data-testid='request-form']");
+    if (requestForm) {
+      requestForm.addEventListener("submit", () => {
+        const button = requestForm.querySelector("[data-testid='request-submit']");
+        if (button) {
+          button.disabled = true;
+        }
+      });
+    }
+  </script>
 {% endblock %}

@@ -40,3 +40,10 @@ class LeaveRequest(Base):
     decision_comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class SubmissionToken(Base):
+    __tablename__ = "submission_tokens"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    leave_request_id: Mapped[int] = mapped_column(ForeignKey("leave_requests.id"), nullable=False)

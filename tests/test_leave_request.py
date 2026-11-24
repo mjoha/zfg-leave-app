@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,6 +28,13 @@ def _login(client, email="ada@example.com"):
     )
 
 
+def _form_token(client) -> str:
+    page = client.get("/requests/new")
+    match = re.search(r'name="form_token" value="([^"]+)"', page.text)
+    assert match is not None
+    return match.group(1)
+
+
 def _submit(client, **overrides):
     payload = {
         "start_date": "2001-06-12",
@@ -34,6 +43,8 @@ def _submit(client, **overrides):
         "user_id": "999",
     }
     payload.update(overrides)
+    if "form_token" not in payload:
+        payload["form_token"] = _form_token(client)
     return client.post("/requests", data=payload, follow_redirects=False)
 
 
@@ -47,7 +58,7 @@ def test_request_form_requires_sign_in(client):
     assert response.status_code == 303
     assert response.headers["location"] == "/login"
 
-    posted = _submit(client)
+    posted = _submit(client, form_token="unsigned")
     assert posted.status_code == 303
     assert posted.headers["location"] == "/login"
     assert _rows() == []
@@ -145,11 +156,12 @@ def test_requests_page_requires_sign_in(client):
 def test_submit_reports_missing_database(client, tmp_path, monkeypatch):
     assert _register(client).status_code == 303
     assert _login(client).status_code == 303
+    token = _form_token(client)
     database_file = tmp_path / "missing-dir" / "leave.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_file.as_posix()}")
     reset_database_state()
     try:
-        response = _submit(client)
+        response = _submit(client, form_token=token)
         assert response.status_code == 503
         assert 'data-testid="database-unavailable"' in response.text
     finally:

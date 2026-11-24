@@ -115,9 +115,9 @@ Interactive controls and important page states use stable `data-testid` attribut
 | Account created | `registration-success`, `registration-success-login`, `registration-success-home` |
 | Sign in | `login-form`, `login-email`, `login-password`, `login-submit`, `login-error` |
 | Signed-in home | `nav-new-request`, `nav-profile`, `nav-user`, `logout-form`, `logout-submit`, `signed-in-name` |
-| New leave request | `request-form`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error` |
-| My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-detail-link`, `request-empty`, `request-saved`, `request-list-new` |
-| Request details | `request-detail`, `request-detail-dates`, `request-detail-days`, `request-detail-reason`, `request-status`, `request-detail-submitted`, `request-detail-back`, `request-withdraw`, `request-withdrawn`, `request-approve`, `request-reject`, `request-decided`, `request-decision-form`, `request-decision-comment-input`, `request-decision-comment`, `review-back` |
+| New leave request | `request-form`, `request-form-token`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error` |
+| My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-detail-link`, `request-empty`, `request-saved`, `request-duplicate`, `request-list-new` |
+| Request details | `request-detail`, `request-detail-dates`, `request-detail-days`, `request-detail-reason`, `request-status`, `request-detail-submitted`, `request-detail-back`, `request-withdraw`, `request-withdrawn`, `request-approve`, `request-reject`, `request-decided`, `request-decision-form`, `request-decision-comment-input`, `request-decision-comment`, `request-timeline`, `request-timeline-event`, `request-timeline-label`, `request-timeline-when`, `review-back` |
 | Review queue | `nav-review`, `review-queue`, `review-row`, `review-employee`, `review-open`, `review-empty`, `review-forbidden` |
 | Profile | `profile-display-name`, `profile-email`, `profile-role`, `profile-created`, `profile-form`, `profile-display-name-input`, `profile-submit`, `profile-saved`, `profile-error` |
 | Missing page | `not-found`, `not-found-home` |

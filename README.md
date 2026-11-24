@@ -88,7 +88,7 @@ Stop the app, delete `data/leave.db` and `data/session_secret`, then run `python
 
 ### Tests
 
-The local CI-equivalent command does not use a network or an external service. It checks for Python 3.12, compiles `app` and `tests`, and runs `pytest -q`:
+The local CI-equivalent command does not use a network or an external service. It checks for Python 3.12, compiles `app` and `tests`, runs Ruff and mypy, and then runs `pytest -q`:
 
 ```text
 .venv\Scripts\python scripts/ci_local.py

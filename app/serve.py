@@ -1,8 +1,6 @@
 import os
 import sys
 
-import uvicorn
-
 from app.seed import seed_database
 
 

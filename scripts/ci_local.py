@@ -1,7 +1,7 @@
 """CI-equivalent checks that stay on this machine.
 
 No network, no database server, and no external service. The command uses the
-current interpreter, compiles the application, and runs pytest.
+current interpreter, compiles the application, runs Ruff and mypy, and runs pytest.
 """
 
 from __future__ import annotations
@@ -33,6 +33,16 @@ def main() -> int:
     if not compileall.compile_dir(str(ROOT / "tests"), quiet=1):
         print("ci_local: failed", file=sys.stderr)
         return 1
+    print("ci_local: ruff check", flush=True)
+    ruff = subprocess.run([sys.executable, "-m", "ruff", "check", "app", "tests", "scripts"], cwd=ROOT)
+    if ruff.returncode != 0:
+        print("ci_local: failed", file=sys.stderr)
+        return ruff.returncode
+    print("ci_local: mypy", flush=True)
+    mypy = subprocess.run([sys.executable, "-m", "mypy", "app"], cwd=ROOT)
+    if mypy.returncode != 0:
+        print("ci_local: failed", file=sys.stderr)
+        return mypy.returncode
     print("ci_local: pytest -q", flush=True)
     completed = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=ROOT)
     if completed.returncode != 0:

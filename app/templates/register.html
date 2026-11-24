@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+  <h1>Create an account</h1>
+  <p>This stores an employee account on this computer. It does not sign you in.</p>
+  {% if errors %}
+    <ul class="errors" data-testid="register-error">
+      {% for error in errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post" action="/register" data-testid="register-form">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" maxlength="254" autocomplete="email" value="{{ email }}" data-testid="register-email" required>
+
+    <label for="display_name">Display name</label>
+    <input id="display_name" name="display_name" type="text" maxlength="80" autocomplete="name" value="{{ display_name }}" data-testid="register-display-name" required>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" data-testid="register-password" required>
+
+    <label for="password_confirm">Confirm password</label>
+    <input id="password_confirm" name="password_confirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" data-testid="register-password-confirm" required>
+
+    <button type="submit" data-testid="register-submit">Create account</button>
+  </form>
+{% endblock %}

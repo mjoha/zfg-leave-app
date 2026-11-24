@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Database not ready{% endblock %}
+
+{% block content %}
+  <h1 data-testid="database-unavailable">Database is not ready</h1>
+  <p>Initialize it with <code>python -m app.db_init</code>, then submit the form again.</p>
+  <p><a href="/register" data-testid="database-unavailable-register">Back to registration</a></p>
+{% endblock %}

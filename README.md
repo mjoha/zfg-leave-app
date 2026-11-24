@@ -33,7 +33,13 @@ py -3.12 -m venv .venv
 
 On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
-Open `http://127.0.0.1:8000/`. `GET /health` returns `{"status":"ok"}`.
+Initialize the local database before registering anyone. This creates missing tables and does not erase an existing file:
+
+```text
+.venv\Scripts\python -m app.db_init
+```
+
+Open `http://127.0.0.1:8000/`. `GET /health` returns `{"status":"ok"}`. Create an employee account at `http://127.0.0.1:8000/register`. Registration does not sign you in, and no demo account is seeded yet.
 
 Tests:
 

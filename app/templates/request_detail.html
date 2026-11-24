@@ -17,6 +17,20 @@
       {% endfor %}
     </ul>
   {% endif %}
+  <h2>Status timeline</h2>
+  <ol class="request-timeline" data-testid="request-timeline">
+    {% for event in timeline %}
+      <li data-testid="request-timeline-event">
+        <span data-testid="request-timeline-label">{{ event.label }}</span>
+        {% if event.when %}
+          <time data-testid="request-timeline-when">{{ event.when }}</time>
+        {% endif %}
+        {% if event.comment %}
+          <p>{{ event.comment }}</p>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
   <dl class="details" data-testid="request-detail">
     <dt>Dates</dt>
     <dd data-testid="request-detail-dates">{{ item.start_date }} to {{ item.end_date }}</dd>

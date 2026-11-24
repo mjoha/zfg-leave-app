@@ -88,6 +88,8 @@ def list_leave_requests_for_user(db: Session, user_id: int) -> list[LeaveRequest
 
 
 def create_leave_request(db: Session, user_id: int, data: LeaveRequestInput) -> LeaveRequest:
+    if data.end_date < data.start_date:
+        raise LeaveStateError("End date must be on or after the start date.")
     row = LeaveRequest(
         user_id=user_id,
         start_date=data.start_date,

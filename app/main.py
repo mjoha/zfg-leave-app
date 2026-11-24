@@ -288,6 +288,13 @@ def submit_leave_request(
         )
     try:
         create_leave_request(db, user.id, data)
+    except LeaveStateError as exc:
+        return templates.TemplateResponse(
+            request,
+            "request_form.html",
+            _request_form_context([exc.message], start_date, end_date, reason),
+            status_code=400,
+        )
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)

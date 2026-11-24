@@ -41,11 +41,13 @@ Initialize the local database before registering anyone. This creates missing ta
 
 Open `http://127.0.0.1:8000/`. `GET /health` returns `{"status":"ok"}`. Create an employee account at `http://127.0.0.1:8000/register`. Registration does not sign you in, and no demo account is seeded yet.
 
-Tests:
+Tests, with the local CI-equivalent command (no network and no external services):
 
 ```text
-.venv\Scripts\python -m pytest -q
+.venv\Scripts\python scripts/ci_local.py
 ```
+
+That command checks for Python 3.12, compiles `app` and `tests`, and runs `pytest -q`.
 
 Container (port 8000):
 

@@ -33,6 +33,8 @@ py -3.12 -m venv .venv
 
 On macOS or Linux, use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
+Configuration is read from the environment when a page or database connection is requested. `APP_NAME` defaults to `leave-app`. `DATABASE_URL` defaults to `sqlite:///./data/leave.db`. When `DATABASE_URL` is unset, `LEAVE_DATA_DIR` chooses the directory for `leave.db`.
+
 Initialize the local database before registering anyone. This creates missing tables and does not erase an existing file:
 
 ```text

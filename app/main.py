@@ -7,15 +7,20 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db
 from app.users import DuplicateEmailError, create_employee, validate_registration
 
-APP_NAME = "leave-app"
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title=APP_NAME, telemetry={"auto_configure": False})
+
+def _template_defaults(request: Request) -> dict[str, object]:
+    return {"app_name": get_settings().app_name}
+
+
+app = FastAPI(title=get_settings().app_name, telemetry={"auto_configure": False})
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = Jinja2Templates(directory=BASE_DIR / "templates", context_processors=[_template_defaults])
 
 
 @app.get("/health")
@@ -25,16 +30,11 @@ def health() -> dict[str, str]:
 
 @app.get("/", response_class=HTMLResponse)
 def landing(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {"app_name": APP_NAME},
-    )
+    return templates.TemplateResponse(request, "index.html", {})
 
 
 def _register_context(errors: list[str], email: str, display_name: str) -> dict[str, object]:
     return {
-        "app_name": APP_NAME,
         "errors": errors,
         "email": email.strip(),
         "display_name": display_name.strip(),
@@ -81,7 +81,7 @@ def register_submit(
         return templates.TemplateResponse(
             request,
             "database_unavailable.html",
-            {"app_name": APP_NAME},
+            {},
             status_code=503,
         )
     return RedirectResponse(url="/account-created", status_code=303)
@@ -89,18 +89,9 @@ def register_submit(
 
 @app.get("/account-created", response_class=HTMLResponse)
 def account_created(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "account_created.html",
-        {"app_name": APP_NAME},
-    )
+    return templates.TemplateResponse(request, "account_created.html", {})
 
 
 @app.exception_handler(404)
 async def not_found(request: Request, exc: Exception) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "not_found.html",
-        {"app_name": APP_NAME},
-        status_code=404,
-    )
+    return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)

@@ -1,4 +1,3 @@
-import os
 from collections.abc import Generator
 from pathlib import Path
 
@@ -6,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DEFAULT_DATABASE_URL = "sqlite:///./data/leave.db"
+from app.config import get_settings
 
 _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
@@ -17,7 +16,7 @@ class Base(DeclarativeBase):
 
 
 def current_database_url() -> str:
-    return os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+    return get_settings().database_url
 
 
 def reset_database_state() -> None:

@@ -1,5 +1,6 @@
+import calendar
 import secrets
-from datetime import timezone
+from datetime import date, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import clear_session, establish_session, load_session_user, signed_in_user
+from app.calendar_view import month_weeks
 from app.config import get_settings
 from app.database import get_db
 from app.leave import (
@@ -652,6 +654,48 @@ def withdraw_request(request: Request, request_id: int, db: Session = Depends(ge
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     return RedirectResponse(url=f"/requests/{row.id}?withdrawn=1", status_code=303)
+
+
+@app.get("/calendar", response_class=HTMLResponse)
+def calendar_month(
+    request: Request,
+    year: int | None = None,
+    month: int | None = None,
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        user = load_session_user(request, db)
+        rows = list_leave_requests_for_user(db, user.id) if user is not None else []
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    today = date.today()
+    shown_year = today.year if year is None else year
+    shown_month = today.month if month is None else month
+    if shown_month < 1 or shown_month > 12 or not 1 <= shown_year <= 9999:
+        return templates.TemplateResponse(
+            request,
+            "calendar_month.html",
+            {
+                "year": today.year,
+                "month_name": calendar.month_name[today.month],
+                "weeks": [],
+                "error": "Choose a month from 1 to 12.",
+            },
+            status_code=400,
+        )
+    return templates.TemplateResponse(
+        request,
+        "calendar_month.html",
+        {
+            "year": shown_year,
+            "month_name": calendar.month_name[shown_month],
+            "weeks": month_weeks(shown_year, shown_month, rows),
+            "error": "",
+        },
+    )
 
 
 @app.get("/requests", response_class=HTMLResponse)

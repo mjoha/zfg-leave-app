@@ -198,6 +198,17 @@ button {
   font-weight: 600;
 }
 
+.calendar td {
+  height: 4.5rem;
+  width: 14%;
+}
+
+.calendar a {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

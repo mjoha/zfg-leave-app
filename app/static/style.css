@@ -198,6 +198,11 @@ button {
   font-weight: 600;
 }
 
+.calendar-nav {
+  display: flex;
+  gap: 1rem;
+}
+
 .calendar td {
   height: 4.5rem;
   width: 14%;

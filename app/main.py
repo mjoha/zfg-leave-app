@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import clear_session, establish_session, load_session_user, signed_in_user
-from app.calendar_view import month_weeks, week_row
+from app.calendar_view import adjacent_weeks, month_weeks, shift_month, week_row
 from app.config import get_settings
 from app.database import get_db
 from app.leave import (
@@ -693,7 +693,7 @@ def calendar_month(
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
-    today = date.today()
+    today = _today()
     shown_year = today.year if year is None else year
     shown_month = today.month if month is None else month
     if shown_month < 1 or shown_month > 12 or not 1 <= shown_year <= 9999:
@@ -715,8 +715,9 @@ def calendar_month(
             "year": shown_year,
             "month": shown_month,
             "month_name": calendar.month_name[shown_month],
-            "weeks": month_weeks(shown_year, shown_month, rows),
+            "weeks": month_weeks(shown_year, shown_month, rows, today),
             "error": "",
+            **_month_nav(shown_year, shown_month),
         },
     )
 
@@ -735,7 +736,7 @@ def calendar_week(
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     if user is None:
         return RedirectResponse(url="/login", status_code=303)
-    anchor = date.today()
+    anchor = _today()
     if day:
         try:
             anchor = date.fromisoformat(day)
@@ -746,12 +747,37 @@ def calendar_week(
                 {"start": "", "end": "", "days": [], "error": "Enter a date as YYYY-MM-DD."},
                 status_code=400,
             )
-    days = week_row(anchor, rows)
+    today = _today()
+    days = week_row(anchor, rows, today)
+    previous, following = adjacent_weeks(anchor)
     return templates.TemplateResponse(
         request,
         "calendar_week.html",
-        {"start": days[0]["date"], "end": days[-1]["date"], "days": days, "error": ""},
+        {
+            "start": days[0]["date"],
+            "end": days[-1]["date"],
+            "days": days,
+            "error": "",
+            "prev_href": f"/calendar/week?day={previous.isoformat()}",
+            "next_href": f"/calendar/week?day={following.isoformat()}",
+            "today_href": f"/calendar/week?day={today.isoformat()}",
+        },
     )
+
+
+def _today() -> date:
+    return date.today()
+
+
+def _month_nav(year: int, month: int) -> dict[str, str]:
+    previous_year, previous_month = shift_month(year, month, -1)
+    next_year, next_month = shift_month(year, month, 1)
+    today = _today()
+    return {
+        "prev_href": f"/calendar?year={previous_year}&month={previous_month}",
+        "next_href": f"/calendar?year={next_year}&month={next_month}",
+        "today_href": f"/calendar?year={today.year}&month={today.month}",
+    }
 
 
 @app.get("/requests", response_class=HTMLResponse)

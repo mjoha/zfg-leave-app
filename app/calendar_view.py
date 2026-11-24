@@ -20,22 +20,43 @@ def week_days(anchor: date) -> list[date]:
     return [start + timedelta(days=offset) for offset in range(7)]
 
 
-def _cells(days: list[date | None], rows: list[LeaveRequest]) -> list[dict[str, object]]:
+def shift_month(year: int, month: int, steps: int) -> tuple[int, int]:
+    index = year * 12 + (month - 1) + steps
+    return index // 12, index % 12 + 1
+
+
+def _cells(
+    days: list[date | None],
+    rows: list[LeaveRequest],
+    today: date | None,
+) -> list[dict[str, object]]:
     cells: list[dict[str, object]] = []
     for day in days:
         if day is None:
-            cells.append({"date": "", "day": "", "requests": []})
+            cells.append({"date": "", "day": "", "requests": [], "today": False})
             continue
         covering = [
             {"id": row.id, "reason": row.reason}
             for row in rows
             if row.start_date <= day <= row.end_date
         ]
-        cells.append({"date": day.isoformat(), "day": day.day, "requests": covering})
+        cells.append(
+            {
+                "date": day.isoformat(),
+                "day": day.day,
+                "requests": covering,
+                "today": today is not None and day == today,
+            }
+        )
     return cells
 
 
-def month_weeks(year: int, month: int, rows: list[LeaveRequest]) -> list[list[dict[str, object]]]:
+def month_weeks(
+    year: int,
+    month: int,
+    rows: list[LeaveRequest],
+    today: date | None = None,
+) -> list[list[dict[str, object]]]:
     shown = month_days(year, month)
     if not shown:
         return []
@@ -43,8 +64,13 @@ def month_weeks(year: int, month: int, rows: list[LeaveRequest]) -> list[list[di
     cells.extend(shown)
     while len(cells) % 7:
         cells.append(None)
-    return [_cells(cells[index : index + 7], rows) for index in range(0, len(cells), 7)]
+    return [_cells(cells[index : index + 7], rows, today) for index in range(0, len(cells), 7)]
 
 
-def week_row(anchor: date, rows: list[LeaveRequest]) -> list[dict[str, object]]:
-    return _cells(list(week_days(anchor)), rows)
+def week_row(anchor: date, rows: list[LeaveRequest], today: date | None = None) -> list[dict[str, object]]:
+    return _cells(list(week_days(anchor)), rows, today)
+
+
+def adjacent_weeks(anchor: date) -> tuple[date, date]:
+    start = week_days(anchor)[0]
+    return start - timedelta(days=7), start + timedelta(days=7)

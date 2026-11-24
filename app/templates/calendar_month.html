@@ -4,6 +4,13 @@
 
 {% block content %}
   <h1 data-testid="calendar-title">{{ month_name }} {{ year }}</h1>
+  {% if prev_href %}
+    <p class="calendar-nav">
+      <a href="{{ prev_href }}" data-testid="calendar-prev">Previous</a>
+      <a href="{{ today_href }}" data-testid="calendar-today">Today</a>
+      <a href="{{ next_href }}" data-testid="calendar-next">Next</a>
+    </p>
+  {% endif %}
   {% if month %}
     <p><a href="/calendar/week?day={{ year }}-{{ '%02d' % month }}-01" data-testid="calendar-open-week">Open week</a></p>
   {% endif %}
@@ -27,6 +34,7 @@
         <tr>
           {% for day in week %}
             <td {% if day.date %}data-date="{{ day.date }}"{% endif %} data-testid="calendar-day">
+              {% if day.today %}<span data-testid="calendar-today-marker">Today</span>{% endif %}
               {% if day.day %}{{ day.day }}{% endif %}
               {% for item in day.requests %}
                 <a href="/requests/{{ item.id }}" data-testid="calendar-request">{{ item.reason }}</a>

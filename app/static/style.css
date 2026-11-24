@@ -48,11 +48,30 @@ main {
 
 nav {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
 nav a {
   color: var(--accent);
+}
+
+nav form {
+  display: inline;
+  max-width: none;
+}
+
+.nav-user {
+  font-weight: 600;
+}
+
+button.nav-button {
+  margin: 0;
+  padding: 0.25rem 0.65rem;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
 }
 
 main {
@@ -82,7 +101,7 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-form {
+main form {
   display: grid;
   gap: 0.35rem;
   max-width: 24rem;

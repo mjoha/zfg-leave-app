@@ -1,3 +1,7 @@
+import os
+
+os.environ.setdefault("SESSION_SECRET", "test-session-secret")
+
 import pytest
 from fastapi.testclient import TestClient
 

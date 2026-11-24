@@ -4,6 +4,7 @@
 
 {% block content %}
   <h1 data-testid="registration-success">Account created</h1>
-  <p>The employee account is stored in the local database.</p>
+  <p>The employee account is stored in the local database. Registration does not sign you in.</p>
+  <p><a href="/login" data-testid="registration-success-login">Sign in</a></p>
   <p><a href="/" data-testid="registration-success-home">Back to home</a></p>
 {% endblock %}

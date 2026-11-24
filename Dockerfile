@@ -2,7 +2,8 @@ FROM python:3.12.10-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DATABASE_URL=sqlite:////data/leave.db
+    DATABASE_URL=sqlite:////data/leave.db \
+    LEAVE_DATA_DIR=/data
 
 WORKDIR /app
 

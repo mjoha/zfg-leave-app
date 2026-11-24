@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import ROLE_EMPLOYEE, User
-from app.security import hash_password
+from app.security import hash_password, verify_password
+
+_DUMMY_PASSWORD_HASH: str | None = None
 
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
 
@@ -46,6 +48,24 @@ def validate_registration(
     if errors:
         return None, errors
     return RegistrationInput(cleaned_email, cleaned_name, password), []
+
+
+def _dummy_password_hash() -> str:
+    global _DUMMY_PASSWORD_HASH
+    if _DUMMY_PASSWORD_HASH is None:
+        _DUMMY_PASSWORD_HASH = hash_password("local-timing-placeholder")
+    return _DUMMY_PASSWORD_HASH
+
+
+def authenticate(db: Session, email: str, password: str) -> User | None:
+    cleaned = email.strip().lower()
+    user = db.scalar(select(User).where(User.email == cleaned))
+    if user is None:
+        verify_password(password, _dummy_password_hash())
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    return user
 
 
 def create_employee(db: Session, data: RegistrationInput) -> User:

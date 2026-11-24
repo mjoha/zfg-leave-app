@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import ROLE_EMPLOYEE, User
+from app.models import ROLE_ADMINISTRATOR, ROLE_EMPLOYEE, User
 from app.security import hash_password, verify_password
 
 _DUMMY_PASSWORD_HASH: str | None = None
@@ -24,6 +24,23 @@ class RegistrationInput:
     password: str
 
 
+def validate_display_name(display_name: str) -> tuple[str | None, list[str]]:
+    cleaned = display_name.strip()
+    if not cleaned or len(cleaned) > 80:
+        return None, ["Display name must be between 1 and 80 characters."]
+    if any(ord(character) < 32 for character in cleaned):
+        return None, ["Display name cannot include control characters."]
+    return cleaned, []
+
+
+def role_label(role: str) -> str:
+    labels = {
+        ROLE_EMPLOYEE: "Employee",
+        ROLE_ADMINISTRATOR: "Administrator",
+    }
+    return labels.get(role, role)
+
+
 def validate_registration(
     email: str,
     display_name: str,
@@ -32,20 +49,17 @@ def validate_registration(
 ) -> tuple[RegistrationInput | None, list[str]]:
     errors: list[str] = []
     cleaned_email = email.strip().lower()
-    cleaned_name = display_name.strip()
+    cleaned_name, name_errors = validate_display_name(display_name)
+    errors.extend(name_errors)
 
     if not cleaned_email or len(cleaned_email) > 254 or _EMAIL_RE.fullmatch(cleaned_email) is None:
         errors.append("Enter a valid email address.")
-    if not cleaned_name or len(cleaned_name) > 80:
-        errors.append("Display name must be between 1 and 80 characters.")
-    elif any(ord(character) < 32 for character in cleaned_name):
-        errors.append("Display name cannot include control characters.")
     if not 8 <= len(password) <= 128:
         errors.append("Password must be between 8 and 128 characters.")
     if password != password_confirm:
         errors.append("Password confirmation does not match.")
 
-    if errors:
+    if errors or cleaned_name is None:
         return None, errors
     return RegistrationInput(cleaned_email, cleaned_name, password), []
 

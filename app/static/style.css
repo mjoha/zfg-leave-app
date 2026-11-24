@@ -133,6 +133,31 @@ button {
   cursor: pointer;
 }
 
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  color: #14301f;
+  background: #e7f6ee;
+  border: 1px solid #b7dfc8;
+  border-radius: 0.35rem;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.details dt,
+.details dd {
+  margin: 0;
+}
+
+.details dt {
+  font-weight: 600;
+}
+
 .errors {
   margin: 0;
   padding: 0.75rem 1rem 0.75rem 1.5rem;

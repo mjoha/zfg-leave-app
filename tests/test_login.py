@@ -49,7 +49,7 @@ def test_login_sets_a_local_session_cookie(client):
     response = _login(client, email="Ada@Example.com")
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/profile"
     cookie = response.headers["set-cookie"].lower()
     assert "leave_session=" in cookie
     assert "httponly" in cookie
@@ -113,7 +113,7 @@ def test_login_page_redirects_when_already_signed_in(client):
     response = client.get("/login", follow_redirects=False)
 
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/profile"
 
 
 def test_login_reports_missing_database(tmp_path, monkeypatch):

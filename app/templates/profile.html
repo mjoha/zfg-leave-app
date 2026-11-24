@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+  <h1>Your profile</h1>
+  {% if saved %}
+    <p class="notice" data-testid="profile-saved">Display name saved.</p>
+  {% endif %}
+  {% if errors %}
+    <ul class="errors" data-testid="profile-error">
+      {% for error in errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <dl class="details">
+    <dt>Display name</dt>
+    <dd data-testid="profile-display-name">{{ saved_display_name }}</dd>
+    <dt>Email</dt>
+    <dd data-testid="profile-email">{{ profile_email }}</dd>
+    <dt>Role</dt>
+    <dd data-testid="profile-role">{{ profile_role }}</dd>
+    <dt>Member since</dt>
+    <dd data-testid="profile-created">{{ profile_created }}</dd>
+  </dl>
+  <form method="post" action="/profile" data-testid="profile-form">
+    <label for="display_name">Display name</label>
+    <input id="display_name" name="display_name" type="text" maxlength="80" autocomplete="name" value="{{ display_name }}" data-testid="profile-display-name-input" required>
+    <button type="submit" data-testid="profile-submit">Save display name</button>
+  </form>
+{% endblock %}

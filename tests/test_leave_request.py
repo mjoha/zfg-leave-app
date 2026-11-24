@@ -45,7 +45,10 @@ def _submit(client, **overrides):
     payload.update(overrides)
     if "form_token" not in payload:
         payload["form_token"] = _form_token(client)
-    return client.post("/requests", data=payload, follow_redirects=False)
+    response = client.post("/requests", data=payload, follow_redirects=False)
+    if response.status_code == 200 and 'data-testid="request-confirm"' in response.text:
+        return client.post("/requests/confirm", follow_redirects=False)
+    return response
 
 
 def _rows() -> list[LeaveRequest]:

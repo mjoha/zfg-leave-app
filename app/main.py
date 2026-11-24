@@ -304,19 +304,68 @@ def submit_leave_request(
             _request_form_context(errors, start_date, end_date, reason, posted_token),
             status_code=400,
         )
+    request.session["leave_request_draft"] = {
+        "start_date": data.start_date.isoformat(),
+        "end_date": data.end_date.isoformat(),
+        "reason": data.reason,
+        "form_token": posted_token,
+    }
+    return templates.TemplateResponse(
+        request,
+        "request_confirm.html",
+        {
+            "start_date": data.start_date.isoformat(),
+            "end_date": data.end_date.isoformat(),
+            "day_count": inclusive_days(data.start_date, data.end_date),
+            "reason": data.reason,
+        },
+    )
+
+
+@app.post("/requests/confirm")
+def confirm_leave_request(request: Request, db: Session = Depends(get_db)) -> Response:
+    try:
+        user = load_session_user(request, db)
+    except OperationalError:
+        db.rollback()
+        return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
+    if user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    draft = request.session.get("leave_request_draft")
+    if not isinstance(draft, dict):
+        return RedirectResponse(url="/requests/new", status_code=303)
+    posted_token = str(draft.get("form_token", ""))
+    expected = request.session.get("leave_form_token")
+    if posted_token != expected or submission_token_used(db, posted_token):
+        request.session.pop("leave_request_draft", None)
+        return RedirectResponse(url="/requests?duplicate=1", status_code=303)
+    data, errors = validate_leave_request(
+        str(draft.get("start_date", "")),
+        str(draft.get("end_date", "")),
+        str(draft.get("reason", "")),
+    )
+    if data is None:
+        request.session.pop("leave_request_draft", None)
+        return templates.TemplateResponse(
+            request,
+            "request_form.html",
+            _request_form_context(errors, "", "", "", _new_form_token(request)),
+            status_code=400,
+        )
     try:
         created = create_leave_request_once(db, user.id, data, posted_token)
     except LeaveStateError as exc:
         return templates.TemplateResponse(
             request,
             "request_form.html",
-            _request_form_context([exc.message], start_date, end_date, reason, posted_token),
+            _request_form_context([exc.message], data.start_date.isoformat(), data.end_date.isoformat(), data.reason, posted_token),
             status_code=400,
         )
     except OperationalError:
         db.rollback()
         return templates.TemplateResponse(request, "database_unavailable.html", {}, status_code=503)
     request.session.pop("leave_form_token", None)
+    request.session.pop("leave_request_draft", None)
     if created is None:
         return RedirectResponse(url="/requests?duplicate=1", status_code=303)
     return RedirectResponse(url="/requests?saved=1", status_code=303)

@@ -68,7 +68,7 @@ Running the seed again does not duplicate those rows or reset a display name you
 2. Sign in at `http://127.0.0.1:8000/login`. The session cookie is named `leave_session`. It is HttpOnly, SameSite=Lax, and expires after 8 hours. Sign-in then opens your profile.
 3. On the profile page, change the display name. Email and role stay as stored.
 4. Use Sign out in the header to clear the session.
-5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. My requests then lists only that account's requests. Open a row for its details. A pending request can be withdrawn by its owner.
+5. While signed in, open New request and submit a start date, end date, and reason. The end date must be on or after the start date. A confirmation page shows the details before they are saved. My requests then lists only that account's requests. Open a row for its details. A pending request can be edited or withdrawn by its owner.
 6. Submitting the same new-request form twice keeps one request. Open New request again to create another.
 7. An administrator opens Review, then approves or rejects a pending request. A comment is optional and is shown on the request. The status timeline lists submission and the later decision or withdrawal.
 
@@ -117,7 +117,7 @@ Interactive controls and important page states use stable `data-testid` attribut
 | Account created | `registration-success`, `registration-success-login`, `registration-success-home` |
 | Sign in | `login-form`, `login-email`, `login-password`, `login-submit`, `login-error` |
 | Signed-in home | `nav-new-request`, `nav-profile`, `nav-user`, `logout-form`, `logout-submit`, `signed-in-name` |
-| New leave request | `request-form`, `request-form-token`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error` |
+| New leave request | `request-form`, `request-form-token`, `request-start`, `request-end`, `request-reason`, `request-submit`, `request-error`, `request-confirm`, `request-confirm-dates`, `request-confirm-days`, `request-confirm-reason`, `request-confirm-submit`, `request-confirm-cancel` |
 | My requests | `nav-requests`, `request-list`, `request-row`, `request-status`, `request-detail-link`, `request-empty`, `request-saved`, `request-duplicate`, `request-list-new` |
 | Request details | `request-detail`, `request-detail-dates`, `request-detail-days`, `request-detail-reason`, `request-status`, `request-detail-submitted`, `request-detail-back`, `request-withdraw`, `request-withdrawn`, `request-approve`, `request-reject`, `request-decided`, `request-decision-form`, `request-decision-comment-input`, `request-decision-comment`, `request-timeline`, `request-timeline-event`, `request-timeline-label`, `request-timeline-when`, `request-edit`, `request-edit-form`, `request-edit-submit`, `request-edited`, `review-back` |
 | Review queue | `nav-review`, `review-queue`, `review-row`, `review-employee`, `review-open`, `review-empty`, `review-forbidden` |

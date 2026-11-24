@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm leave request{% endblock %}
+
+{% block content %}
+  <h1>Confirm leave request</h1>
+  <p>Check these details, then save the request or go back and change them.</p>
+  <dl class="details" data-testid="request-confirm">
+    <dt>Dates</dt>
+    <dd data-testid="request-confirm-dates">{{ start_date }} to {{ end_date }}</dd>
+    <dt>Days</dt>
+    <dd data-testid="request-confirm-days">{{ day_count }}</dd>
+    <dt>Reason</dt>
+    <dd data-testid="request-confirm-reason">{{ reason }}</dd>
+  </dl>
+  <form method="post" action="/requests/confirm">
+    <button type="submit" data-testid="request-confirm-submit">Save request</button>
+  </form>
+  <p><a href="/requests/new" data-testid="request-confirm-cancel">Change details</a></p>
+{% endblock %}

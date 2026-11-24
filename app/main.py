@@ -22,6 +22,7 @@ from app.leave import (
     list_leave_requests_for_user,
     list_pending_reviews,
     status_label,
+    validate_decision_comment,
     validate_leave_request,
     withdraw_leave_request,
 )
@@ -301,6 +302,7 @@ def _detail_context(
     *,
     withdrawn: bool,
     decided: bool = False,
+    comment: str = "",
 ) -> dict[str, object]:
     return {
         "item": {
@@ -311,12 +313,14 @@ def _detail_context(
             "reason": row.reason,
             "status_label": status_label(row.status),
             "created": _format_timestamp(row.created_at),
+            "decision_comment": row.decision_comment,
             "can_withdraw": row.status == STATUS_PENDING and row.user_id == user.id,
             "can_decide": row.status == STATUS_PENDING and user.role == ROLE_ADMINISTRATOR,
         },
         "errors": errors,
         "withdrawn": withdrawn,
         "decided": decided,
+        "comment": comment,
     }
 
 
@@ -345,7 +349,7 @@ def leave_request_detail(request: Request, request_id: int, db: Session = Depend
     )
 
 
-def _decide(request: Request, request_id: int, db: Session, status: str) -> Response:
+def _decide(request: Request, request_id: int, db: Session, status: str, comment_raw: str) -> Response:
     try:
         user = load_session_user(request, db)
         row = get_leave_request(db, request_id) if user is not None else None
@@ -358,13 +362,21 @@ def _decide(request: Request, request_id: int, db: Session, status: str) -> Resp
         return templates.TemplateResponse(request, "not_found.html", {}, status_code=404)
     if user.role != ROLE_ADMINISTRATOR:
         return templates.TemplateResponse(request, "forbidden.html", {}, status_code=403)
+    comment, comment_errors = validate_decision_comment(comment_raw)
+    if comment_errors:
+        return templates.TemplateResponse(
+            request,
+            "request_detail.html",
+            _detail_context(row, user, comment_errors, withdrawn=False, comment=comment_raw),
+            status_code=400,
+        )
     try:
-        decide_leave_request(db, row, status)
+        decide_leave_request(db, row, status, comment)
     except LeaveStateError as exc:
         return templates.TemplateResponse(
             request,
             "request_detail.html",
-            _detail_context(row, user, [exc.message], withdrawn=False),
+            _detail_context(row, user, [exc.message], withdrawn=False, comment=comment_raw),
             status_code=400,
         )
     except OperationalError:
@@ -374,13 +386,23 @@ def _decide(request: Request, request_id: int, db: Session, status: str) -> Resp
 
 
 @app.post("/requests/{request_id}/approve")
-def approve_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
-    return _decide(request, request_id, db, STATUS_APPROVED)
+def approve_request(
+    request: Request,
+    request_id: int,
+    comment: str = Form(""),
+    db: Session = Depends(get_db),
+) -> Response:
+    return _decide(request, request_id, db, STATUS_APPROVED, comment)
 
 
 @app.post("/requests/{request_id}/reject")
-def reject_request(request: Request, request_id: int, db: Session = Depends(get_db)) -> Response:
-    return _decide(request, request_id, db, STATUS_REJECTED)
+def reject_request(
+    request: Request,
+    request_id: int,
+    comment: str = Form(""),
+    db: Session = Depends(get_db),
+) -> Response:
+    return _decide(request, request_id, db, STATUS_REJECTED, comment)
 
 
 def _review_rows(rows: list[tuple]) -> list[dict[str, object]]:

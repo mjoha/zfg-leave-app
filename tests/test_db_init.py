@@ -22,7 +22,9 @@ def test_db_init_creates_schema_and_can_run_again(tmp_path, monkeypatch):
         assert "users" in inspect(get_engine()).get_table_names()
         assert "leave_requests" in inspect(get_engine()).get_table_names()
         with get_engine().connect() as connection:
-            assert MigrationContext.configure(connection).get_current_revision() == "0001_initial"
+            assert MigrationContext.configure(connection).get_current_revision() == "0002_decision"
+            columns = {column["name"] for column in inspect(get_engine()).get_columns("leave_requests")}
+        assert {"decision_comment", "decided_at"} <= columns
 
         with Session(get_engine()) as session:
             session.add(

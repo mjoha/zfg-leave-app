@@ -12,6 +12,7 @@ from app.models import (
     STATUS_WITHDRAWN,
     LeaveRequest,
     User,
+    utcnow,
 )
 from app.validation import ErrorList
 
@@ -76,12 +77,33 @@ def status_label(status: str) -> str:
     return labels.get(status, status)
 
 
-def decide_leave_request(db: Session, row: LeaveRequest, status: str) -> LeaveRequest:
+def validate_decision_comment(comment_raw: str) -> tuple[str | None, list[str]]:
+    errors = ErrorList()
+    comment = comment_raw.strip()
+    if not comment:
+        return None, []
+    if len(comment) > 500:
+        errors.add("Comment must be 500 characters or fewer.")
+    elif any(ord(character) < 32 and character not in "\n\t" for character in comment):
+        errors.add("Comment cannot include control characters.")
+    if errors:
+        return None, errors.messages()
+    return comment, []
+
+
+def decide_leave_request(
+    db: Session,
+    row: LeaveRequest,
+    status: str,
+    comment: str | None,
+) -> LeaveRequest:
     if status not in {STATUS_APPROVED, STATUS_REJECTED}:
         raise LeaveStateError("Choose approve or reject.")
     if row.status != STATUS_PENDING:
         raise LeaveStateError("Only a pending request can be decided.")
     row.status = status
+    row.decision_comment = comment
+    row.decided_at = utcnow()
     db.commit()
     db.refresh(row)
     return row

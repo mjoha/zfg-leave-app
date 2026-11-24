@@ -26,6 +26,10 @@
     <dd data-testid="request-detail-reason">{{ item.reason }}</dd>
     <dt>Status</dt>
     <dd data-testid="request-status">{{ item.status_label }}</dd>
+    {% if item.decision_comment %}
+      <dt>Comment</dt>
+      <dd data-testid="request-decision-comment">{{ item.decision_comment }}</dd>
+    {% endif %}
     <dt>Submitted</dt>
     <dd data-testid="request-detail-submitted">{{ item.created }}</dd>
   </dl>
@@ -35,11 +39,11 @@
     </form>
   {% endif %}
   {% if item.can_decide %}
-    <form method="post" action="/requests/{{ item.id }}/approve">
-      <button type="submit" data-testid="request-approve">Approve</button>
-    </form>
-    <form method="post" action="/requests/{{ item.id }}/reject">
-      <button type="submit" data-testid="request-reject">Reject</button>
+    <form method="post" data-testid="request-decision-form">
+      <label for="decision_comment">Comment</label>
+      <textarea id="decision_comment" name="comment" rows="3" maxlength="500" data-testid="request-decision-comment-input">{{ comment }}</textarea>
+      <button type="submit" formaction="/requests/{{ item.id }}/approve" data-testid="request-approve">Approve</button>
+      <button type="submit" formaction="/requests/{{ item.id }}/reject" data-testid="request-reject">Reject</button>
     </form>
   {% endif %}
   <p><a href="/requests" data-testid="request-detail-back">Back to my requests</a></p>
